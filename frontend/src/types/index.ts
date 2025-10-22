@@ -47,9 +47,14 @@ export interface ApiResponse<T> {
   error?: string;
 }
 
+// In your types/index.ts
 export interface DashboardStats {
   totalSales: number;
   totalProfit: number;
   outOfStockCount: number;
   lowStockCount: number;
+  dailySales: number;
+  monthlySales: number;
+  dailyProfit: number;
+  monthlyProfit: number;
 }
