@@ -29,23 +29,20 @@ const productSchema = new mongoose.Schema(
     },
     sku: {
       type: String,
-      unique: true,
-      sparse: true,
+      // No unique constraint - allow any values including duplicates
     },
-    // 🔑 ADD THIS USER FIELD - THIS IS WHAT MAKES PRODUCTS USER-SPECIFIC
     user: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: true // Every product MUST belong to a user
-    }
+      ref: "User",
+      required: true,
+    },
   },
   {
     timestamps: true,
   }
 );
 
-// Update index to include user for better performance
+// Keep your existing indexes (remove the problematic sku index)
 productSchema.index({ user: 1, name: "text", category: "text" });
-productSchema.index({ user: 1, sku: 1 }, { unique: true, sparse: true });
 
 export default mongoose.model("Product", productSchema);
