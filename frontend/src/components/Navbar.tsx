@@ -4,25 +4,27 @@ import { useAuth } from "../utils/AuthContext";
 
 interface NavbarProps {
   onMenuClick: () => void;
+  showMenu: boolean;
 }
 
-const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
+const Navbar: React.FC<NavbarProps> = ({ onMenuClick, showMenu }) => {
   const { user, logout } = useAuth();
-  console.log(user);
 
   return (
     <nav className="bg-gray-800 text-white p-4 flex justify-between items-center">
       <div className="flex items-center space-x-4">
-        {/* Menu button for mobile */}
-        <button
-          onClick={onMenuClick}
-          className="lg:hidden p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700"
-        >
-          ☰
-        </button>
+        {/* Menu button - only show if user is authenticated */}
+        {showMenu && (
+          <button
+            onClick={onMenuClick}
+            className="lg:hidden p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700"
+          >
+            ☰
+          </button>
+        )}
 
         <div className="text-lg font-bold">
-          <Link to="/">BizTrack</Link>
+          <Link to={user ? "/dashboard" : "/"}>BizTrack</Link>
         </div>
       </div>
 

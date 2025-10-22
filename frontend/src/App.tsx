@@ -12,23 +12,28 @@ import Signup from "./pages/Signup";
 // Import Sales Tracker pages
 import Products from "./pages/Products";
 import Sales from "./pages/Sales";
+import Inventory from "./pages/Inventory";
+import Customers from "./pages/Customers";
+import Reports from "./pages/Reports";
 
 const App: React.FC = () => {
   return (
     <AuthProvider>
       <Routes>
-        {/* Wrap all pages in Layout to show Navbar globally */}
-        <Route element={<Layout />}>
-          <Route path="/" element={<Home />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
+        {/* Public routes without sidebar layout */}
+        <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
 
-          {/* Protected Routes */}
+        {/* Protected routes with sidebar layout */}
+        <Route element={<Layout />}>
           <Route element={<ProtectedRoute />}>
             <Route path="/dashboard" element={<Dashboard />} />
-            {/* Add Sales Tracker routes here */}
             <Route path="/products" element={<Products />} />
             <Route path="/sales" element={<Sales />} />
+            <Route path="/inventory" element={<Inventory />} />
+            <Route path="/customers" element={<Customers />} />
+            <Route path="/reports" element={<Reports />} />
           </Route>
         </Route>
       </Routes>
