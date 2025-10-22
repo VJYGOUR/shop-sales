@@ -116,16 +116,67 @@ export const refreshToken = async (req, res) => {
   }
 };
 
-export const me = (req, res) => {
-  console.log("executed");
-  const token = req.cookies.accessToken;
-  console.log("token", token);
-  if (!token) return res.status(401).json({ message: "Not authenticated" });
+export const me = async (req, res) => {
+  console.log("🔐 Me endpoint executed");
 
   try {
+    const token = req.cookies.accessToken;
+    console.log("📄 Token received:", token ? "Yes" : "No");
+
+    if (!token) {
+      console.log("❌ No token provided");
+      return res.status(401).json({
+        success: false,
+        message: "Not authenticated",
+      });
+    }
+
+    // Verify the token
     const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
-    res.json({ user: decoded });
+    console.log("✅ Token decoded for user:", decoded.userId);
+
+    // Get full user data from database (excluding password)
+    const user = await User.findById(decoded.userId).select("-password");
+
+    if (!user) {
+      console.log("❌ User not found in database");
+      return res.status(401).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    console.log("✅ User data retrieved:", user.email);
+
+    res.json({
+      success: true,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        // Add any other user fields you want to expose
+      },
+    });
   } catch (err) {
-    res.status(401).json({ message: "Invalid token" });
+    console.error("❌ Token verification error:", err.message);
+
+    if (err.name === "TokenExpiredError") {
+      return res.status(401).json({
+        success: false,
+        message: "Token expired",
+      });
+    }
+
+    if (err.name === "JsonWebTokenError") {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid token",
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
   }
 };

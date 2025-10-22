@@ -2,14 +2,30 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../utils/AuthContext";
 
-const Navbar: React.FC = () => {
+interface NavbarProps {
+  onMenuClick: () => void;
+}
+
+const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
   const { user, logout } = useAuth();
+  console.log(user);
 
   return (
     <nav className="bg-gray-800 text-white p-4 flex justify-between items-center">
-      <div className="text-lg font-bold">
-        <Link to="/">MyApp</Link>
+      <div className="flex items-center space-x-4">
+        {/* Menu button for mobile */}
+        <button
+          onClick={onMenuClick}
+          className="lg:hidden p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700"
+        >
+          ☰
+        </button>
+
+        <div className="text-lg font-bold">
+          <Link to="/">BizTrack</Link>
+        </div>
       </div>
+
       <div className="space-x-4">
         {!user ? (
           <>
@@ -21,14 +37,14 @@ const Navbar: React.FC = () => {
             </Link>
           </>
         ) : (
-          <>
-            <Link to="/dashboard" className="hover:text-gray-300">
-              Dashboard
-            </Link>
+          <div className="flex items-center space-x-4">
+            <span className="text-gray-300 hidden sm:block">
+              Welcome, {user.name}
+            </span>
             <button onClick={logout} className="hover:text-gray-300">
               Logout
             </button>
-          </>
+          </div>
         )}
       </div>
     </nav>
