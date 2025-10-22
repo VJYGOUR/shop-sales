@@ -5,6 +5,7 @@ import {
   deleteSale,
   getSales,
 } from "../controllers/sales.controllers.js";
+import { protect } from "../middleware/auth.js";
 
 const router = express.Router();
 
@@ -12,8 +13,8 @@ const router = express.Router();
 // @route   GET /api/sales
 // @access  Public
 
-router.get("/", getSales);
-router.post("/create", createSale);
-router.delete("/:id/delete", deleteSale);
+router.get("/", protect, getSales);
+router.post("/create", protect, createSale);
+router.delete("/:id/delete", protect, deleteSale);
 
 export default router;

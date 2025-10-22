@@ -41,14 +41,20 @@ const saleSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    // 🔑 ADD THIS USER FIELD - THIS MAKES SALES USER-SPECIFIC
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true // Every sale MUST belong to a user
+    }
   },
   {
     timestamps: true,
   }
 );
 
-// Index for better query performance
-saleSchema.index({ date: -1 });
-saleSchema.index({ productId: 1 });
+// Update indexes to include user
+saleSchema.index({ user: 1, date: -1 }); // User's sales by date
+saleSchema.index({ user: 1, productId: 1 }); // User's sales by product
 
 export default mongoose.model("Sale", saleSchema);

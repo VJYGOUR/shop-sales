@@ -1,8 +1,15 @@
 import Sale from "../models/sales.models.js";
 import Product from "../models/product.models.js";
+
+// @desc    Get all sales FOR LOGGED-IN USER
+// @route   GET /api/sales
+// @access  Private 🔑 CHANGED FROM PUBLIC
 export const getSales = async (req, res) => {
   try {
-    const sales = await Sale.find().sort({ createdAt: -1 });
+    // 🔑 ONLY GET SALES THAT BELONG TO THE LOGGED-IN USER
+    const sales = await Sale.find({ user: req.user._id }).sort({
+      createdAt: -1,
+    });
 
     res.json({
       success: true,
@@ -16,12 +23,20 @@ export const getSales = async (req, res) => {
     });
   }
 };
+
+// @desc    Create a sale
+// @route   POST /api/sales
+// @access  Private 🔑 CHANGED FROM PUBLIC
 export const createSale = async (req, res) => {
   try {
     const { productId, quantity, totalAmount, notes } = req.body;
 
-    // Get the product
-    const product = await Product.findById(productId);
+    // 🔑 CHECK THAT PRODUCT BELONGS TO LOGGED-IN USER
+    const product = await Product.findOne({
+      _id: productId,
+      user: req.user._id,
+    });
+
     if (!product) {
       return res.status(404).json({
         success: false,
@@ -42,7 +57,7 @@ export const createSale = async (req, res) => {
     const costPrice = product.costPrice;
     const profit = totalAmount - costPrice * quantity;
 
-    // Create sale
+    // Create sale WITH USER ID
     const sale = new Sale({
       productId,
       productName: product.name,
@@ -52,6 +67,7 @@ export const createSale = async (req, res) => {
       costPrice,
       profit,
       notes,
+      user: req.user._id, // 🔑 ADD USER TO SALE
     });
 
     const savedSale = await sale.save();
@@ -71,12 +87,17 @@ export const createSale = async (req, res) => {
     });
   }
 };
+
 // @desc    Delete a sale
 // @route   DELETE /api/sales/:id
-// @access  Public
+// @access  Private 🔑 CHANGED FROM PUBLIC
 export const deleteSale = async (req, res) => {
   try {
-    const sale = await Sale.findById(req.params.id);
+    // 🔑 CHECK THAT SALE BELONGS TO LOGGED-IN USER
+    const sale = await Sale.findOne({
+      _id: req.params.id,
+      user: req.user._id,
+    });
 
     if (!sale) {
       return res.status(404).json({
@@ -99,4 +120,67 @@ export const deleteSale = async (req, res) => {
   }
 };
 
-// Add this to your routes
+// @desc    Get single sale
+// @route   GET /api/sales/:id
+// @access  Private
+export const getSale = async (req, res) => {
+  try {
+    // 🔑 CHECK THAT SALE BELONGS TO LOGGED-IN USER
+    const sale = await Sale.findOne({
+      _id: req.params.id,
+      user: req.user._id,
+    });
+
+    if (!sale) {
+      return res.status(404).json({
+        success: false,
+        error: "Sale not found",
+      });
+    }
+
+    res.json({
+      success: true,
+      data: sale,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+};
+
+// @desc    Update a sale
+// @route   PUT /api/sales/:id
+// @access  Private
+export const updateSale = async (req, res) => {
+  try {
+    // 🔑 CHECK THAT SALE BELONGS TO LOGGED-IN USER
+    const sale = await Sale.findOne({
+      _id: req.params.id,
+      user: req.user._id,
+    });
+
+    if (!sale) {
+      return res.status(404).json({
+        success: false,
+        error: "Sale not found",
+      });
+    }
+
+    const updatedSale = await Sale.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+      runValidators: true,
+    });
+
+    res.json({
+      success: true,
+      data: updatedSale,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      error: error.message,
+    });
+  }
+};

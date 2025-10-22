@@ -32,13 +32,20 @@ const productSchema = new mongoose.Schema(
       unique: true,
       sparse: true,
     },
+    // 🔑 ADD THIS USER FIELD - THIS IS WHAT MAKES PRODUCTS USER-SPECIFIC
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true // Every product MUST belong to a user
+    }
   },
   {
     timestamps: true,
   }
 );
 
-// Index for better performance
-productSchema.index({ name: "text", category: "text" });
+// Update index to include user for better performance
+productSchema.index({ user: 1, name: "text", category: "text" });
+productSchema.index({ user: 1, sku: 1 }, { unique: true, sparse: true });
 
 export default mongoose.model("Product", productSchema);
