@@ -11,10 +11,15 @@
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.14",
+    "@types/jsbarcode": "^3.11.4",
     "axios": "^1.12.2",
+    "html5-qrcode": "^2.3.8",
+    "jsbarcode": "^3.12.1",
+    "qrcode.react": "^4.2.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-hook-form": "^7.65.0",
+    "react-qr-code": "^2.0.18",
     "react-router-dom": "^7.9.3",
     "recharts": "^3.3.0",
     "tailwindcss": "^4.1.14"

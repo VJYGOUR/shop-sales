@@ -56,6 +56,21 @@ export interface Product {
   salePrice: number;
   category?: string;
   sku?: string;
+  barcode?: string; // Add barcode field
+  qrCode?: string; // Add QR code field
   createdAt: string;
   updatedAt: string;
+}
+// Barcode/QR Code types
+export interface BarcodeData {
+  productId: string;
+  productName: string;
+  sku?: string;
+  price: number;
+}
+
+export interface ScanResult {
+  success: boolean;
+  product?: Product;
+  error?: string;
 }

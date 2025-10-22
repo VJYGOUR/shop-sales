@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from "react";
 import type { Product, ScanResult } from "../types/index";
-import { saleAPI, productAPI } from "../services/api";
+import { productAPI } from "../services/api";
 import BarcodeScanner from "../components/barcode/BarcodeScanner";
 
-const Sales: React.FC = () => {
+const InventoryReceiving: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
-  const [cart, setCart] = useState<{ product: Product; quantity: number }[]>(
-    []
-  );
+  const [receivingItems, setReceivingItems] = useState<
+    { product: Product; quantity: number }[]
+  >([]);
   const [showScanner, setShowScanner] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -26,7 +26,7 @@ const Sales: React.FC = () => {
     loadProducts();
   }, []);
 
-  // Handle barcode scan
+  // Handle barcode scan for receiving
   const handleScan = async (result: ScanResult) => {
     setShowScanner(false);
 
@@ -37,89 +37,74 @@ const Sales: React.FC = () => {
       );
 
       if (actualProduct) {
-        // Check if product already in cart
-        const existingItem = cart.find(
+        // Check if product already in receiving list
+        const existingItem = receivingItems.find(
           (item) => item.product._id === actualProduct._id
         );
 
         if (existingItem) {
           // Increase quantity
-          setCart(
-            cart.map((item) =>
+          setReceivingItems(
+            receivingItems.map((item) =>
               item.product._id === actualProduct._id
                 ? { ...item, quantity: item.quantity + 1 }
                 : item
             )
           );
         } else {
-          // Add new item to cart
-          setCart([...cart, { product: actualProduct, quantity: 1 }]);
+          // Add new item to receiving list
+          setReceivingItems([
+            ...receivingItems,
+            { product: actualProduct, quantity: 1 },
+          ]);
         }
 
-        alert(`✅ Added: ${actualProduct.name} - ₹${actualProduct.salePrice}`);
+        alert(`✅ Added to receiving: ${actualProduct.name}`);
       } else {
-        alert("❌ Product not found in inventory");
+        alert("❌ Product not found in system. Please add product first.");
       }
     }
   };
 
-  // Remove item from cart
-  const removeFromCart = (productId: string) => {
-    setCart(cart.filter((item) => item.product._id !== productId));
+  // Remove item from receiving list
+  const removeFromReceiving = (productId: string) => {
+    setReceivingItems(
+      receivingItems.filter((item) => item.product._id !== productId)
+    );
   };
 
-  // Calculate totals
-  const subtotal = cart.reduce(
-    (sum, item) => sum + item.product.salePrice * item.quantity,
-    0
-  );
-  const totalProfit = cart.reduce(
-    (sum, item) =>
-      sum + (item.product.salePrice - item.product.costPrice) * item.quantity,
-    0
-  );
-
-  // Complete sale
-  const completeSale = async () => {
-    if (cart.length === 0) {
-      alert("Cart is empty!");
+  // Complete receiving - Add stock to inventory
+  const completeReceiving = async () => {
+    if (receivingItems.length === 0) {
+      alert("No items to receive!");
       return;
     }
 
     try {
-      // Create sale records and update inventory
-      for (const item of cart) {
-        const saleData = {
-          productId: item.product._id,
-          productName: item.product.name,
-          quantity: item.quantity,
-          salePrice: item.product.salePrice,
-          costPrice: item.product.costPrice,
-          totalAmount: item.product.salePrice * item.quantity,
-          profit:
-            (item.product.salePrice - item.product.costPrice) * item.quantity,
-        };
-
-        // Record sale
-        await saleAPI.createSale(saleData);
-
-        // Update product stock (reduce inventory)
+      // Update inventory for each item
+      for (const item of receivingItems) {
         const updatedProduct = {
           ...item.product,
-          stock: item.product.stock - item.quantity,
+          stock: item.product.stock + item.quantity,
         };
+
         await productAPI.updateProduct(item.product._id, updatedProduct);
       }
 
-      alert(`✅ Sale completed! Total: ₹${subtotal.toFixed(2)}`);
-      setCart([]); // Clear cart
+      alert(
+        `✅ Stock received! Added ${receivingItems.reduce(
+          (sum, item) => sum + item.quantity,
+          0
+        )} items to inventory`
+      );
+      setReceivingItems([]); // Clear receiving list
 
       // Refresh products to get updated stock
       const updatedProducts = await productAPI.getProducts();
       setProducts(updatedProducts);
     } catch (error) {
-      console.error("Error completing sale:", error);
-      alert("❌ Error completing sale");
+      console.error("Error receiving stock:", error);
+      alert("❌ Error receiving stock");
     }
   };
 
@@ -134,9 +119,9 @@ const Sales: React.FC = () => {
       {/* Header */}
       <div className="bg-white p-6 rounded-lg shadow-sm">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">
-          Point of Sale
+          Inventory Receiving
         </h1>
-        <p className="text-gray-600">Scan barcodes to sell products</p>
+        <p className="text-gray-600">Scan products to add stock to inventory</p>
       </div>
 
       {/* Scanner Section */}
@@ -146,13 +131,15 @@ const Sales: React.FC = () => {
             <h2 className="text-lg font-semibold text-gray-800">
               Barcode Scanner
             </h2>
-            <p className="text-gray-600">Scan products to add to cart</p>
+            <p className="text-gray-600">
+              Scan products to add to receiving list
+            </p>
           </div>
           <button
             onClick={() => setShowScanner(true)}
-            className="mt-4 sm:mt-0 bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+            className="mt-4 sm:mt-0 bg-green-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-700 transition-colors"
           >
-            📱 Scan Product
+            📱 Scan Incoming Stock
           </button>
         </div>
 
@@ -165,58 +152,54 @@ const Sales: React.FC = () => {
             onChange={(e) => {
               const product = products.find((p) => p._id === e.target.value);
               if (product) {
-                const existingItem = cart.find(
+                const existingItem = receivingItems.find(
                   (item) => item.product._id === product._id
                 );
                 if (existingItem) {
-                  setCart(
-                    cart.map((item) =>
+                  setReceivingItems(
+                    receivingItems.map((item) =>
                       item.product._id === product._id
                         ? { ...item, quantity: item.quantity + 1 }
                         : item
                     )
                   );
                 } else {
-                  setCart([...cart, { product, quantity: 1 }]);
+                  setReceivingItems([
+                    ...receivingItems,
+                    { product, quantity: 1 },
+                  ]);
                 }
               }
             }}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
           >
             <option value="">Select a product...</option>
             {products.map((product) => (
-              <option
-                key={product._id}
-                value={product._id}
-                disabled={product.stock === 0}
-              >
-                {product.name} - ₹{product.salePrice}{" "}
-                {product.stock === 0
-                  ? "(Out of Stock)"
-                  : `(${product.stock} available)`}
+              <option key={product._id} value={product._id}>
+                {product.name} - Current Stock: {product.stock}
               </option>
             ))}
           </select>
         </div>
       </div>
 
-      {/* Shopping Cart */}
+      {/* Receiving List */}
       <div className="bg-white p-6 rounded-lg shadow-sm">
         <h2 className="text-lg font-semibold text-gray-800 mb-4">
-          Shopping Cart
+          Receiving List
         </h2>
 
-        {cart.length === 0 ? (
+        {receivingItems.length === 0 ? (
           <div className="text-center py-8 bg-gray-50 rounded-lg">
-            <div className="text-4xl mb-4">🛒</div>
-            <p className="text-gray-600">Cart is empty</p>
+            <div className="text-4xl mb-4">📦</div>
+            <p className="text-gray-600">No items to receive</p>
             <p className="text-gray-500 text-sm">
               Scan products or select manually
             </p>
           </div>
         ) : (
           <div className="space-y-4">
-            {cart.map((item, index) => (
+            {receivingItems.map((item, index) => (
               <div
                 key={index}
                 className="flex justify-between items-center p-4 border border-gray-200 rounded-lg"
@@ -226,12 +209,11 @@ const Sales: React.FC = () => {
                     {item.product.name}
                   </p>
                   <p className="text-sm text-gray-600">
-                    ₹{item.product.salePrice} × {item.quantity} = ₹
-                    {(item.product.salePrice * item.quantity).toFixed(2)}
+                    Quantity: {item.quantity}
                   </p>
                   <p className="text-xs text-gray-500">
                     Stock: {item.product.stock} →{" "}
-                    {item.product.stock - item.quantity}
+                    {item.product.stock + item.quantity}
                   </p>
                 </div>
                 <div className="flex items-center space-x-4">
@@ -239,14 +221,14 @@ const Sales: React.FC = () => {
                     <button
                       onClick={() => {
                         if (item.quantity > 1) {
-                          setCart(
-                            cart.map((cartItem) =>
-                              cartItem.product._id === item.product._id
+                          setReceivingItems(
+                            receivingItems.map((receivingItem) =>
+                              receivingItem.product._id === item.product._id
                                 ? {
-                                    ...cartItem,
-                                    quantity: cartItem.quantity - 1,
+                                    ...receivingItem,
+                                    quantity: receivingItem.quantity - 1,
                                   }
-                                : cartItem
+                                : receivingItem
                             )
                           );
                         }
@@ -258,20 +240,16 @@ const Sales: React.FC = () => {
                     <span className="font-medium">{item.quantity}</span>
                     <button
                       onClick={() => {
-                        if (item.quantity < item.product.stock) {
-                          setCart(
-                            cart.map((cartItem) =>
-                              cartItem.product._id === item.product._id
-                                ? {
-                                    ...cartItem,
-                                    quantity: cartItem.quantity + 1,
-                                  }
-                                : cartItem
-                            )
-                          );
-                        } else {
-                          alert("Not enough stock available!");
-                        }
+                        setReceivingItems(
+                          receivingItems.map((receivingItem) =>
+                            receivingItem.product._id === item.product._id
+                              ? {
+                                  ...receivingItem,
+                                  quantity: receivingItem.quantity + 1,
+                                }
+                              : receivingItem
+                          )
+                        );
                       }}
                       className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center hover:bg-gray-300"
                     >
@@ -279,7 +257,7 @@ const Sales: React.FC = () => {
                     </button>
                   </div>
                   <button
-                    onClick={() => removeFromCart(item.product._id)}
+                    onClick={() => removeFromReceiving(item.product._id)}
                     className="text-red-600 hover:text-red-800"
                   >
                     🗑️
@@ -288,28 +266,12 @@ const Sales: React.FC = () => {
               </div>
             ))}
 
-            {/* Totals */}
-            <div className="border-t pt-4 space-y-2">
-              <div className="flex justify-between">
-                <span className="font-medium">Subtotal:</span>
-                <span className="font-bold">₹{subtotal.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between text-green-600">
-                <span>Estimated Profit:</span>
-                <span className="font-bold">₹{totalProfit.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between text-lg font-bold border-t pt-2">
-                <span>Total:</span>
-                <span>₹{subtotal.toFixed(2)}</span>
-              </div>
-            </div>
-
-            {/* Complete Sale Button */}
+            {/* Complete Receiving Button */}
             <button
-              onClick={completeSale}
+              onClick={completeReceiving}
               className="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors mt-4"
             >
-              ✅ Complete Sale (Auto-Reduce Inventory)
+              ✅ Add Stock to Inventory (Auto-Increase Stock)
             </button>
           </div>
         )}
@@ -326,4 +288,4 @@ const Sales: React.FC = () => {
   );
 };
 
-export default Sales;
+export default InventoryReceiving;

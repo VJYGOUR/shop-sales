@@ -17,8 +17,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     { name: "Products", href: "/products", icon: "📦" },
     { name: "Sales", href: "/sales", icon: "💰" },
     { name: "Inventory", href: "/inventory", icon: "📋" },
+    { name: "Receive Stock", href: "/receive-stock", icon: "📥" }, // Add this
     { name: "Customers", href: "/customers", icon: "👥" },
     { name: "Reports", href: "/reports", icon: "📈" },
+    { name: "Barcode Tools", href: "/barcode-tools", icon: "📱" },
   ];
 
   const isActive = (href: string) => {
