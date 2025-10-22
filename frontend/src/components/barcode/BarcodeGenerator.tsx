@@ -59,7 +59,7 @@ const BarcodeGenerator: React.FC<BarcodeGeneratorProps> = ({
 
   const b64EncodeUnicode = (str: string) => {
     return btoa(
-      encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (match, p1) => {
+      encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, ( p1) => {
         return String.fromCharCode(parseInt(p1, 16));
       })
     );
