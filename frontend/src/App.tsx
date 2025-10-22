@@ -17,6 +17,7 @@ import Customers from "./pages/Customers";
 import Reports from "./pages/Reports";
 import BarcodeTools from "./pages/BarcodeTools";
 import InventoryReceiving from "./pages/InventoryReceiving";
+import SalesHistory from "./pages/SalesHistory";
 
 const App: React.FC = () => {
   return (
@@ -38,6 +39,7 @@ const App: React.FC = () => {
             <Route path="/reports" element={<Reports />} />
             <Route path="/barcode-tools" element={<BarcodeTools />} />
             <Route path="/receive-stock" element={<InventoryReceiving />} />
+            <Route path="/sales-history" element={<SalesHistory />} />
           </Route>
         </Route>
       </Routes>

@@ -51,6 +51,15 @@ export const productAPI = {
     }
     return response.data.data!;
   },
+    // ADDED: deleteProduct method
+  deleteProduct: async (id: string): Promise<void> => {
+    const response = await axiosInstance.delete<ApiResponse<void>>(
+      `/products/${id}/delete`
+    );
+    if (!response.data.success) {
+      throw new Error(response.data.error);
+    }
+  },
 };
 
 // Sales API

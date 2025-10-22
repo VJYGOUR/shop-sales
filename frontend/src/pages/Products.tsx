@@ -8,13 +8,16 @@ const Products: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [editingStock, setEditingStock] = useState<string | null>(null);
   const [stockUpdate, setStockUpdate] = useState<number>(0);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   const {
     register,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors },
   } = useForm<CreateProductData>();
 
@@ -35,18 +38,51 @@ const Products: React.FC = () => {
 
   const onSubmit = async (data: CreateProductData) => {
     try {
-      await productAPI.createProduct(data);
+      if (editingProduct) {
+        // Update existing product
+        await productAPI.updateProduct(editingProduct._id, data);
+      } else {
+        // Create new product
+        await productAPI.createProduct(data);
+      }
+      
       setShowForm(false);
+      setEditingProduct(null);
       reset();
       loadProducts();
     } catch (error) {
-      console.error("Error creating product:", error);
-      alert("Error creating product: " + (error as Error).message);
+      console.error("Error saving product:", error);
+      alert("Error saving product: " + (error as Error).message);
+    }
+  };
+
+  const handleEdit = (product: Product) => {
+    setEditingProduct(product);
+    setShowForm(true);
+    
+    // Pre-fill form with product data
+    setValue("name", product.name);
+    setValue("sku", product.sku || "");
+    setValue("stock", product.stock);
+    setValue("costPrice", product.costPrice);
+    setValue("salePrice", product.salePrice);
+    setValue("category", product.category || "");
+  };
+
+  const handleDelete = async (productId: string) => {
+    try {
+      await productAPI.deleteProduct(productId);
+      setDeleteConfirm(null);
+      loadProducts();
+    } catch (error) {
+      console.error("Error deleting product:", error);
+      alert("Error deleting product: " + (error as Error).message);
     }
   };
 
   const handleCancel = () => {
     setShowForm(false);
+    setEditingProduct(null);
     reset();
   };
 
@@ -101,17 +137,23 @@ const Products: React.FC = () => {
           </p>
         </div>
         <Button
-          onClick={() => setShowForm(true)}
+          onClick={() => {
+            setEditingProduct(null);
+            reset();
+            setShowForm(true);
+          }}
           className="w-full sm:w-auto text-center"
         >
           Add Product
         </Button>
       </div>
 
-      {/* Add Product Form */}
+      {/* Add/Edit Product Form */}
       {showForm && (
         <div className="bg-white p-4 sm:p-6 rounded-lg shadow-md mb-6 sm:mb-8">
-          <h2 className="text-xl font-semibold mb-4">Add New Product</h2>
+          <h2 className="text-xl font-semibold mb-4">
+            {editingProduct ? "Edit Product" : "Add New Product"}
+          </h2>
           <form
             onSubmit={handleSubmit(onSubmit)}
             className="grid grid-cols-1 md:grid-cols-2 gap-4"
@@ -218,7 +260,7 @@ const Products: React.FC = () => {
 
             <div className="md:col-span-2 flex flex-col sm:flex-row gap-3 sm:gap-4">
               <Button type="submit" className="w-full sm:w-auto text-center">
-                Create Product
+                {editingProduct ? "Update Product" : "Create Product"}
               </Button>
               <Button
                 type="button"
@@ -233,7 +275,7 @@ const Products: React.FC = () => {
         </div>
       )}
 
-      {/* Products List with Add Stock Feature */}
+      {/* Products List with Actions */}
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
@@ -332,8 +374,53 @@ const Products: React.FC = () => {
                   <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {product.category || "-"}
                   </td>
-                  <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {/* Placeholder for other actions */}
+                  <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <Button
+                        onClick={() => handleEdit(product)}
+                        variant="secondary"
+                        className="px-3 py-1 text-xs"
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        onClick={() => setDeleteConfirm(product._id)}
+                        variant="danger"
+                        className="px-3 py-1 text-xs"
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                    
+                    {/* Delete Confirmation Modal */}
+                    {deleteConfirm === product._id && (
+                      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                        <div className="bg-white p-6 rounded-lg shadow-xl max-w-sm mx-4">
+                          <h3 className="text-lg font-semibold mb-2">
+                            Confirm Delete
+                          </h3>
+                          <p className="text-gray-600 mb-4">
+                            Are you sure you want to delete "{product.name}"? This action cannot be undone.
+                          </p>
+                          <div className="flex gap-3">
+                            <Button
+                              onClick={() => handleDelete(product._id)}
+                              variant="danger"
+                              className="flex-1"
+                            >
+                              Delete
+                            </Button>
+                            <Button
+                              onClick={() => setDeleteConfirm(null)}
+                              variant="secondary"
+                              className="flex-1"
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </td>
                 </tr>
               ))}
