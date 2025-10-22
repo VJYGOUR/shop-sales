@@ -34,6 +34,37 @@ const BarcodeGenerator: React.FC<BarcodeGeneratorProps> = ({
     }
   }, [product.sku, width, height]);
 
+  const downloadBarcode = () => {
+    if (barcodeRef.current) {
+      const svgData = new XMLSerializer().serializeToString(barcodeRef.current);
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      const img = new Image();
+
+      img.onload = () => {
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx?.drawImage(img, 0, 0);
+
+        const pngFile = canvas.toDataURL("image/png");
+        const downloadLink = document.createElement("a");
+        downloadLink.download = `${product.name}_barcode.png`;
+        downloadLink.href = pngFile;
+        downloadLink.click();
+      };
+
+      img.src = "data:image/svg+xml;base64," + b64EncodeUnicode(svgData);
+    }
+  };
+
+  const b64EncodeUnicode = (str: string) => {
+    return btoa(
+      encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (match, p1) => {
+        return String.fromCharCode(parseInt(p1, 16));
+      })
+    );
+  };
+
   if (!product.sku) {
     return (
       <div className="bg-gray-100 p-4 rounded text-center">
@@ -49,6 +80,12 @@ const BarcodeGenerator: React.FC<BarcodeGeneratorProps> = ({
         <p className="text-xs text-gray-500">SKU: {product.sku}</p>
       </div>
       <svg ref={barcodeRef} className="w-full" />
+      <button
+        onClick={downloadBarcode}
+        className="w-full mt-3 bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition-colors"
+      >
+        📥 Download Barcode
+      </button>
     </div>
   );
 };
