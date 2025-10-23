@@ -2,6 +2,7 @@ import React from "react";
 import { Routes, Route } from "react-router-dom";
 
 import Login from "./pages/Login";
+import VerifyEmail from "./pages/VerifyEmail";
 import Home from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
 import ProtectedRoute from "./utils/ProtectedRoute";
@@ -27,7 +28,8 @@ const App: React.FC = () => {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
-
+        <Route path="/verify-email" element={<VerifyEmail />} />{" "}
+        {/* Add this route */}
         {/* Protected routes with sidebar layout */}
         <Route element={<Layout />}>
           <Route element={<ProtectedRoute />}>

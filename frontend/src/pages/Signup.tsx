@@ -1,9 +1,9 @@
 import { useForm } from "react-hook-form";
-
 import axiosInstance from "../axios/axiosInstance";
 import handleApiError from "../utils/handleApiError";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useFormMessage } from "../utils/useFormMessage";
+import { AxiosError } from "axios";
 
 // Define the form data interface
 interface SignupForm {
@@ -21,25 +21,26 @@ interface SignupResponse {
     name: string;
     email: string;
   };
+  verificationEmailSent?: boolean;
 }
 
 const Signup = () => {
-  const {
-    successMessage,
-    setSuccessMessage,
-    errorMessage,
-    setErrorMessage,
-    
-  } = useFormMessage();
+  const { successMessage, setSuccessMessage, errorMessage, setErrorMessage } =
+    useFormMessage();
   const navigate = useNavigate();
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<SignupForm>();
 
+  const password = watch("password");
+
   const onSubmit = async (data: SignupForm) => {
     setSuccessMessage("");
+    setErrorMessage("");
+
     try {
       const response = await axiosInstance.post<SignupResponse>(
         "/auth/signup",
@@ -49,13 +50,25 @@ const Signup = () => {
           password: data.password,
         }
       );
+
       console.log("response", response);
-      setSuccessMessage(
-        "Account created successfully! Redirecting to login..."
-      );
-      navigate("/login");
-    } catch (error) {
-      setErrorMessage(handleApiError(error));
+
+      if (response.data.verificationEmailSent === false) {
+        setSuccessMessage(
+          "Account created successfully! However, we couldn't send the verification email. Please contact support."
+        );
+      } else {
+        setSuccessMessage(
+          "Account created successfully! Please check your email for verification link before logging in."
+        );
+      }
+
+      // Don't navigate to login immediately - let user see the success message
+      // User needs to verify email before they can login
+    } catch (error: unknown) {
+      console.error("Signup error:", error);
+      const axiosError = error as AxiosError<{ message: string }>;
+      setErrorMessage(handleApiError(axiosError));
     }
   };
 
@@ -70,6 +83,19 @@ const Signup = () => {
         {successMessage && (
           <div className="bg-green-100 text-green-800 p-3 rounded-md text-center">
             {successMessage}
+            {successMessage.includes("check your email") && (
+              <div className="mt-2 text-sm">
+                <p className="text-green-700">
+                  Didn't receive the email? Check your spam folder.
+                </p>
+                <button
+                  onClick={() => navigate("/login")}
+                  className="mt-2 text-blue-600 hover:text-blue-500 underline"
+                >
+                  Go to Login
+                </button>
+              </div>
+            )}
           </div>
         )}
 
@@ -162,6 +188,32 @@ const Signup = () => {
             )}
           </div>
 
+          {/* Confirm Password Field */}
+          <div>
+            <label
+              htmlFor="confirmPassword"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Confirm Password
+            </label>
+            <input
+              type="password"
+              id="confirmPassword"
+              {...register("confirmPassword", {
+                required: "Please confirm your password",
+                validate: (value) =>
+                  value === password || "Passwords do not match",
+              })}
+              placeholder="Confirm your password"
+              className="mt-1 block w-full px-4 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 border-gray-300"
+            />
+            {errors.confirmPassword && (
+              <p className="text-sm text-red-600 mt-1">
+                {errors.confirmPassword.message}
+              </p>
+            )}
+          </div>
+
           <button
             type="submit"
             disabled={isSubmitting}
@@ -173,13 +225,21 @@ const Signup = () => {
 
         <p className="text-center text-sm text-gray-600">
           Already have an account?{" "}
-          <a
-            href="/login"
+          <Link
+            to="/login"
             className="text-indigo-600 hover:text-indigo-700 font-medium"
           >
             Log in
-          </a>
+          </Link>
         </p>
+
+        {/* Email verification info */}
+        <div className="bg-blue-50 p-3 rounded-md">
+          <p className="text-sm text-blue-700 text-center">
+            📧 You'll receive a verification email to activate your account
+            before logging in.
+          </p>
+        </div>
       </div>
     </div>
   );

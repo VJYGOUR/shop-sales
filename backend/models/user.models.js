@@ -9,6 +9,12 @@ const userSchema = new mongoose.Schema(
       unique: true,
       lowercase: true,
       trim: true,
+      validate: {
+        validator: function (email) {
+          return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        },
+        message: "Invalid email format",
+      },
     },
     password: {
       type: String,
@@ -22,6 +28,10 @@ const userSchema = new mongoose.Schema(
       },
     ],
     role: { type: String, enum: ["customer", "admin"], default: "customer" },
+    // Add these new fields for email verification
+    isEmailVerified: { type: Boolean, default: false },
+    emailVerificationToken: String,
+    emailVerificationExpires: Date,
   },
   { timestamps: true }
 );
