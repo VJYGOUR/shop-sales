@@ -115,23 +115,23 @@ export const login = async (req, res) => {
 };
 
 // ✅ ADDED: Email verification endpoint (this is the controller function)
+
+// Verify email endpoint
 export const verifyEmail = async (req, res) => {
   try {
     let { token } = req.query;
-
-    if (!token) {
+    if (!token)
       return res
         .status(400)
         .json({ message: "Verification token is required" });
-    }
 
     token = token.trim();
 
-    // Atomically find the user AND set email verified
+    // Atomic find-and-update
     const user = await User.findOneAndUpdate(
       {
         emailVerificationToken: token,
-        emailVerificationExpires: { $gt: new Date() }, // token not expired
+        emailVerificationExpires: { $gt: new Date() },
       },
       {
         $set: {
@@ -150,11 +150,11 @@ export const verifyEmail = async (req, res) => {
       });
     }
 
-    return res.status(200).json({
-      message: "Email verified successfully. You can now log in.",
-    });
+    res
+      .status(200)
+      .json({ message: "Email verified successfully. You can now log in." });
   } catch (error) {
-    console.error("Verification error:", error);
+    console.error("💥 Verification error:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };

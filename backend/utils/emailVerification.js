@@ -1,15 +1,16 @@
 import validator from "validator";
-import nodemailer from "nodemailer";
+import sgMail from "@sendgrid/mail";
 
-// Check if email is valid and not disposable
+// Initialize SendGrid
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+// Validate email format, disposable emails, and fake patterns
 export const validateEmail = async (email) => {
   try {
-    // Basic email validation
     if (!validator.isEmail(email)) {
       return { isValid: false, reason: "Invalid email format" };
     }
 
-    // Check for disposable emails
     const disposableDomains = [
       "tempmail.com",
       "guerrillamail.com",
@@ -23,14 +24,13 @@ export const validateEmail = async (email) => {
     ];
 
     const domain = email.split("@")[1].toLowerCase();
-    if (disposableDomains.some((disposable) => domain.includes(disposable))) {
+    if (disposableDomains.some((d) => domain.includes(d))) {
       return {
         isValid: false,
         reason: "Disposable email addresses are not allowed",
       };
     }
 
-    // Check for common fake email patterns
     const fakePatterns = [
       /^test\d*@/i,
       /^demo\d*@/i,
@@ -38,8 +38,7 @@ export const validateEmail = async (email) => {
       /^temp\d*@/i,
       /^admin\d*@/i,
     ];
-
-    if (fakePatterns.some((pattern) => pattern.test(email))) {
+    if (fakePatterns.some((p) => p.test(email))) {
       return { isValid: false, reason: "Suspicious email pattern detected" };
     }
 
@@ -49,42 +48,19 @@ export const validateEmail = async (email) => {
   }
 };
 
-// Email transporter setup - FIXED: createTransporter to createTransport
-export const createTransporter = () => {
-  return nodemailer.createTransport({
-    service: "gmail", // or your email service
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS, // Use app password for Gmail
-    },
-  });
-};
-
-// Send verification email
+// Send verification email using SendGrid
 export const sendVerificationEmail = async (email, verificationToken) => {
   try {
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
+    const frontendUrl = process.env.FRONTEND_URL?.replace(/\/$/, "");
+    const verificationUrl = `${frontendUrl}/verify-email?token=${verificationToken}`;
 
-    const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
-
-    console.log("📧 Sending verification email:");
-    console.log("   To:", email);
-    console.log("   Token:", verificationToken);
-    console.log("   Token length:", verificationToken.length);
-    console.log("   URL:", verificationUrl);
-
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
+    const msg = {
       to: email,
+      from: process.env.SENDGRID_FROM_EMAIL,
       subject: "Verify Your Email Address",
-      html: `. <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #333;">Verify Your Email Address</h2>
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2>Verify Your Email Address</h2>
           <p>Please click the button below to verify your email address:</p>
           <a href="${verificationUrl}" 
              style="background-color: #007bff; color: white; padding: 12px 24px; 
@@ -98,8 +74,8 @@ export const sendVerificationEmail = async (email, verificationToken) => {
       `,
     };
 
-    await transporter.sendMail(mailOptions);
-    console.log("✅ Verification email sent successfully to:", email);
+    await sgMail.send(msg);
+    console.log(`✅ Verification email sent to ${email}`);
     return true;
   } catch (error) {
     console.error("❌ Error sending verification email:", error);
