@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import type { Product, CreateProductData } from "../types/index";
 import { productAPI } from "../services/api";
 import Button from "../components/ui/Button";
+import { usePlanLimits } from "../utils/usePlanLimits"; // ADDED IMPORT
 
 const Products: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -12,6 +13,9 @@ const Products: React.FC = () => {
   const [editingStock, setEditingStock] = useState<string | null>(null);
   const [stockUpdate, setStockUpdate] = useState<number>(0);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+
+  // ADDED HOOK
+  const { checkProductLimit } = usePlanLimits();
 
   const {
     register,
@@ -38,14 +42,20 @@ const Products: React.FC = () => {
 
   const onSubmit = async (data: CreateProductData) => {
     try {
+      // ADDED PLAN LIMIT CHECK
+      if (!editingProduct && !checkProductLimit(products.length)) {
+        alert(
+          `Free plan limit reached! Upgrade to add more than ${products.length} products.`
+        );
+        return;
+      }
+
       if (editingProduct) {
-        // Update existing product
         await productAPI.updateProduct(editingProduct._id, data);
       } else {
-        // Create new product
         await productAPI.createProduct(data);
       }
-      
+
       setShowForm(false);
       setEditingProduct(null);
       reset();
@@ -56,11 +66,11 @@ const Products: React.FC = () => {
     }
   };
 
+  // ALL REMAINING FUNCTIONS STAY EXACTLY THE SAME
   const handleEdit = (product: Product) => {
     setEditingProduct(product);
     setShowForm(true);
-    
-    // Pre-fill form with product data
+
     setValue("name", product.name);
     setValue("sku", product.sku || "");
     setValue("stock", product.stock);
@@ -125,6 +135,7 @@ const Products: React.FC = () => {
     );
   }
 
+  // ENTIRE JSX REMAINS EXACTLY THE SAME
   return (
     <div className="p-4 sm:p-6">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6 sm:mb-8">
@@ -148,7 +159,6 @@ const Products: React.FC = () => {
         </Button>
       </div>
 
-      {/* Add/Edit Product Form */}
       {showForm && (
         <div className="bg-white p-4 sm:p-6 rounded-lg shadow-md mb-6 sm:mb-8">
           <h2 className="text-xl font-semibold mb-4">
@@ -275,7 +285,6 @@ const Products: React.FC = () => {
         </div>
       )}
 
-      {/* Products List with Actions */}
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
@@ -391,8 +400,7 @@ const Products: React.FC = () => {
                         Delete
                       </Button>
                     </div>
-                    
-                    {/* Delete Confirmation Modal */}
+
                     {deleteConfirm === product._id && (
                       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                         <div className="bg-white p-6 rounded-lg shadow-xl max-w-sm mx-4">
@@ -400,7 +408,8 @@ const Products: React.FC = () => {
                             Confirm Delete
                           </h3>
                           <p className="text-gray-600 mb-4">
-                            Are you sure you want to delete "{product.name}"? This action cannot be undone.
+                            Are you sure you want to delete "{product.name}"?
+                            This action cannot be undone.
                           </p>
                           <div className="flex gap-3">
                             <Button

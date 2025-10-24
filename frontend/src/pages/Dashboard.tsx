@@ -3,6 +3,8 @@ import type { DashboardStats, Product, Sale } from "../types/index";
 import { saleAPI, productAPI } from "../services/api";
 import { Link } from "react-router-dom";
 import ChartsContainer from "../components/charts/ChartsContainer";
+import { useAuth } from "../utils/AuthContext"; // ADD THIS
+import { PLANS } from "../utils/plans"; // ADD THIS
 
 const Dashboard: React.FC = () => {
   const [stats, setStats] = useState<DashboardStats>({
@@ -19,6 +21,9 @@ const Dashboard: React.FC = () => {
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCharts, setShowCharts] = useState(true);
+
+  // ADD THIS HOOK
+  const { user } = useAuth();
 
   const calculateDailyAndMonthlyStats = (sales: Sale[]) => {
     const now = new Date();
@@ -128,7 +133,49 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Stats Grid */}
+      {/* ADD PLAN STATUS SECTION */}
+      {user && user.plan && (
+        <div className="bg-white p-4 rounded-lg shadow-sm border">
+          <div
+            className={`p-4 rounded-lg ${
+              user.plan === "free"
+                ? "bg-yellow-50 border border-yellow-200"
+                : "bg-green-50 border border-green-200"
+            }`}
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h3
+                  className={`font-semibold ${
+                    user.plan === "free" ? "text-yellow-800" : "text-green-800"
+                  }`}
+                >
+                  Current Plan: {PLANS[user.plan]?.name || user.plan}
+                </h3>
+                <p
+                  className={`text-sm ${
+                    user.plan === "free" ? "text-yellow-700" : "text-green-700"
+                  }`}
+                >
+                  {user.plan === "free"
+                    ? `Limit: ${PLANS.free.limits.maxProducts} products • Upgrade for more features`
+                    : "Full access to all features"}
+                </p>
+              </div>
+              {user.plan === "free" && (
+                <Link
+                  to="/billing"
+                  className="mt-2 sm:mt-0 bg-blue-600 text-white px-4 py-2 rounded text-sm font-medium hover:bg-blue-700 transition-colors"
+                >
+                  Upgrade Plan
+                </Link>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Stats Grid - YOUR EXISTING CODE */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Today's Sales */}
         <div className="bg-white p-6 rounded-lg shadow-sm border-l-4 border-blue-500">

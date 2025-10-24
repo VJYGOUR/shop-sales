@@ -42,6 +42,8 @@ export const signup = async (req, res) => {
       name,
       email,
       password,
+      plan: "free", // ← ADD THIS - default to free plan
+      businessName: name + "'s Business",
       isEmailVerified: false,
       emailVerificationToken,
       emailVerificationExpires,
@@ -61,6 +63,8 @@ export const signup = async (req, res) => {
         _id: user._id,
         name: user.name,
         email: user.email,
+        plan: user.plan, // ← ADD THIS
+        businessName: user.businessName, // ← ADD THIS
         isEmailVerified: user.isEmailVerified,
       },
       message:
@@ -300,9 +304,11 @@ export const me = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        isEmailVerified: user.isEmailVerified, // ✅ ADDED
-        role: user.role, // ✅ ADDED
-        // Add any other user fields you want to expose
+        isEmailVerified: user.isEmailVerified,
+        role: user.role,
+        // ADD THESE TWO LINES:
+        plan: user.plan || "free", // Default to 'free' if not set
+        businessName: user.businessName || user.name + "'s Business", // Default if not set
       },
     });
   } catch (err) {

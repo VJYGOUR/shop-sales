@@ -1,9 +1,11 @@
 import React, { useState } from "react";
+import { Link } from "react-router-dom"; // ADD THIS IMPORT
 import type { Product, ScanResult } from "../types/index";
 import { productAPI } from "../services/api";
 import BarcodeGenerator from "../components/barcode/BarcodeGenerator";
 import QRCodeGenerator from "../components/barcode/QRCodeGenerator";
 import BarcodeScanner from "../components/barcode/BarcodeScanner";
+import { usePlanLimits } from "../utils/usePlanLimits"; // ADD THIS IMPORT
 
 const BarcodeTools: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -11,6 +13,9 @@ const BarcodeTools: React.FC = () => {
   const [showScanner, setShowScanner] = useState(false);
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // ADD THIS HOOK
+  const { canUseFeature } = usePlanLimits();
 
   // Load products on component mount
   React.useEffect(() => {
@@ -31,6 +36,34 @@ const BarcodeTools: React.FC = () => {
     loadProducts();
   }, []);
 
+  // ADD PLAN CHECK - Show upgrade message for free users
+  if (!canUseFeature("barcode_system")) {
+    return (
+      <div className="p-6 max-w-4xl mx-auto">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-8 text-center">
+          <div className="text-4xl mb-4">📱</div>
+          <h2 className="text-2xl font-bold text-yellow-800 mb-2">
+            Barcode Tools - Premium Feature
+          </h2>
+          <p className="text-yellow-700 mb-4 text-lg">
+            Upgrade to the Professional plan to access barcode generation and
+            scanning features.
+          </p>
+          <p className="text-yellow-600 mb-6">
+            Generate custom barcodes, QR codes, and scan products with your
+            camera.
+          </p>
+          <Link
+            to="/billing"
+            className="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors inline-block"
+          >
+            Upgrade to Professional Plan
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   const handleScan = (result: ScanResult) => {
     setScanResult(result);
     setShowScanner(false);
@@ -48,6 +81,7 @@ const BarcodeTools: React.FC = () => {
     );
   }
 
+  // YOUR EXISTING JSX REMAINS EXACTLY THE SAME
   return (
     <div className="space-y-6">
       {/* Header */}

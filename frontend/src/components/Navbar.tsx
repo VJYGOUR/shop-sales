@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../utils/AuthContext";
 
@@ -9,6 +9,7 @@ interface NavbarProps {
 
 const Navbar: React.FC<NavbarProps> = ({ onMenuClick, showMenu }) => {
   const { user, logout } = useAuth();
+  const [showDropdown, setShowDropdown] = useState(false);
 
   return (
     <nav className="bg-gray-800 text-white p-4 flex justify-between items-center">
@@ -39,13 +40,41 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuClick, showMenu }) => {
             </Link>
           </>
         ) : (
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-4 relative">
             <span className="text-gray-300 hidden sm:block">
               Welcome, {user.name}
             </span>
-            <button onClick={logout} className="hover:text-gray-300">
-              Logout
-            </button>
+
+            {/* User dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setShowDropdown(!showDropdown)}
+                className="hover:text-gray-300 flex items-center"
+              >
+                👤
+              </button>
+
+              {showDropdown && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
+                  <Link
+                    to="/billing"
+                    onClick={() => setShowDropdown(false)}
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    💳 Billing & Plan
+                  </Link>
+                  <button
+                    onClick={() => {
+                      setShowDropdown(false);
+                      logout();
+                    }}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    Logout
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>

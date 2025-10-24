@@ -29,7 +29,9 @@ const userSchema = new mongoose.Schema(
     },
     businessName: {
       type: String,
-      default: "My Business",
+      default: function () {
+        return this.name + "'s Business"; // Auto-generate from name
+      },
     },
     cartItems: [
       {
