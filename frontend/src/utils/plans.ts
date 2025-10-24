@@ -7,11 +7,11 @@ export const PLANS = {
       maxProducts: 100,
       maxUsers: 1,
       features: [
-        "Basic inventory management",
-        "Sales tracking",
-        "Customer management",
-        "Basic reports",
-      ],
+        "basic_inventory",
+        "sales_tracking",
+        "customer_management",
+        "basic_reports",
+      ] as const,
     },
   },
   paid: {
@@ -21,15 +21,28 @@ export const PLANS = {
       maxProducts: 10000,
       maxUsers: 5,
       features: [
-        "Unlimited products",
-        "Multiple users",
-        "Advanced analytics",
-        "Barcode system",
-        "Custom reports",
-        "Priority support",
-      ],
+        "unlimited_products",
+        "multiple_users",
+        "advanced_analytics",
+        "barcode_system",
+        "custom_reports",
+        "priority_support",
+      ] as const,
     },
   },
 } as const;
+
+// Create a union type of all possible features
+export type FeatureType =
+  | "basic_inventory"
+  | "sales_tracking"
+  | "customer_management"
+  | "basic_reports"
+  | "unlimited_products"
+  | "multiple_users"
+  | "advanced_analytics"
+  | "barcode_system"
+  | "custom_reports"
+  | "priority_support";
 
 export type PlanType = keyof typeof PLANS;
