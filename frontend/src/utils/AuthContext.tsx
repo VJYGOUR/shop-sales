@@ -11,6 +11,8 @@ interface User {
   id: string;
   name: string;
   email: string;
+  plan: "free" | "paid";
+  businessName: string;
 }
 
 interface AuthContextType {
