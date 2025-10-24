@@ -16,10 +16,20 @@ const userSchema = new mongoose.Schema(
         message: "Invalid email format",
       },
     },
+
     password: {
       type: String,
       required: [true, "Password is required"],
       minlength: [6, "Password must be at least 6 characters long"],
+    },
+    plan: {
+      type: String,
+      enum: ["free", "paid"],
+      default: "free",
+    },
+    businessName: {
+      type: String,
+      default: "My Business",
     },
     cartItems: [
       {
