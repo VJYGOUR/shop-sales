@@ -20,6 +20,9 @@ interface SignupResponse {
     id: string;
     name: string;
     email: string;
+    // ADD THESE:
+    plan: "free" | "paid";
+    businessName: string;
   };
   verificationEmailSent?: boolean;
 }
