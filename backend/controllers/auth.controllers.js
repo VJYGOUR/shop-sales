@@ -306,6 +306,7 @@ export const me = async (req, res) => {
         email: user.email,
         isEmailVerified: user.isEmailVerified,
         role: user.role,
+        phoneNumber: user.phoneNumber,
         // ADD THESE TWO LINES:
         plan: user.plan || "free", // Default to 'free' if not set
         businessName: user.businessName || user.name + "'s Business", // Default if not set

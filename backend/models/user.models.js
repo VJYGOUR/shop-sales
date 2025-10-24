@@ -33,6 +33,9 @@ const userSchema = new mongoose.Schema(
         return this.name + "'s Business"; // Auto-generate from name
       },
     },
+    phoneNumber: {
+      type: String,
+    },
     cartItems: [
       {
         quantity: { type: Number, default: 1 },

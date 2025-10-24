@@ -20,6 +20,7 @@ interface SignupResponse {
     id: string;
     name: string;
     email: string;
+    phoneNumber?: string; //
     // ADD THESE:
     plan: "free" | "paid";
     businessName: string;
