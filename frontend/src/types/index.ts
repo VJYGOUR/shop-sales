@@ -47,7 +47,13 @@ export interface Sale {
   updatedAt: string;
   notes?: string;
 }
-
+export interface ProductImage {
+  _id: string;
+  url: string;
+  public_id: string;
+  position: number;
+  isPrimary: boolean;
+}
 export interface Product {
   _id: string;
   name: string;
@@ -55,6 +61,7 @@ export interface Product {
   costPrice: number;
   salePrice: number;
   category?: string;
+  images: ProductImage[]; //
   sku?: string;
   barcode?: string; // Add barcode field
   qrCode?: string; // Add QR code field

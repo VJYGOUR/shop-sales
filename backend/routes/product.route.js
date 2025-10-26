@@ -15,6 +15,7 @@ router.get("/", protect, getProducts);
 router.get("/:id", protect, getProduct);
 // In server/routes/productRoutes.js - add this route
 router.patch("/:id/update", protect, updateProduct);
+router.put("/:id", protect, updateProduct);
 router.delete("/:id/delete", protect, deleteProduct);
 
 export default router;

@@ -3,6 +3,7 @@ import axiosInstance from "../axios/axiosInstance";
 
 interface ImageUploadProps {
   onImageUpload: (imageUrl: string) => void;
+  onImageDelete: () => void;
   currentImage?: string;
   size?: "sm" | "md" | "lg";
 }
@@ -21,6 +22,19 @@ interface UploadResponse {
   };
 }
 
+interface DeleteResponse {
+  success: boolean;
+  message: string;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    profileImage: null;
+    plan: string;
+    businessName: string;
+  };
+}
+
 interface ApiError {
   response?: {
     data?: {
@@ -32,10 +46,12 @@ interface ApiError {
 
 const ImageUpload: React.FC<ImageUploadProps> = ({
   onImageUpload,
+  onImageDelete,
   currentImage,
   size = "md",
 }) => {
   const [isUploading, setIsUploading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -82,7 +98,6 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
         }
       );
 
-      // Now we get the actual Cloudinary URL
       onImageUpload(response.data.profileImage);
     } catch (err: unknown) {
       const error = err as ApiError;
@@ -93,6 +108,29 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
       setIsUploading(false);
     }
   };
+
+  const deleteImage = async () => {
+    if (!currentImage) return;
+
+    setIsDeleting(true);
+    setError("");
+
+    try {
+      const response = await axiosInstance.delete<DeleteResponse>(
+        "/upload/profile-image"
+      );
+      console.log(response);
+      onImageDelete();
+    } catch (err: unknown) {
+      const error = err as ApiError;
+      setError(
+        error.response?.data?.message || error.message || "Delete failed"
+      );
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const handleClick = () => {
     setError("");
     fileInputRef.current?.click();
@@ -100,6 +138,8 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
 
   const defaultAvatar =
     "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80";
+
+  const hasCustomImage = currentImage && !currentImage.includes("unsplash.com");
 
   return (
     <div className="flex flex-col items-center space-y-3">
@@ -113,6 +153,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
             shadow-lg cursor-pointer
             transition-all duration-200
             group-hover:shadow-xl
+            ${isUploading || isDeleting ? "opacity-50" : ""}
           `}
           onClick={handleClick}
         >
@@ -128,10 +169,14 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
             absolute inset-0 bg-black bg-opacity-40 
             rounded-full flex items-center justify-center 
             transition-all duration-200
-            ${isUploading ? "opacity-100" : "opacity-0 group-hover:opacity-100"}
+            ${
+              isUploading || isDeleting
+                ? "opacity-100"
+                : "opacity-0 group-hover:opacity-100"
+            }
           `}
           >
-            {isUploading ? (
+            {isUploading || isDeleting ? (
               <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin" />
             ) : (
               <svg
@@ -156,26 +201,75 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
             )}
           </div>
         </div>
+
+        {/* Delete Button (only show if user has custom image) */}
+        {hasCustomImage && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              deleteImage();
+            }}
+            disabled={isDeleting}
+            className={`
+              absolute -top-2 -right-2
+              w-6 h-6 rounded-full
+              flex items-center justify-center
+              transition-all duration-200
+              ${
+                isDeleting
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-red-500 hover:bg-red-600"
+              }
+              text-white text-xs
+              shadow-lg
+            `}
+            title="Delete profile image"
+          >
+            {isDeleting ? "⋯" : "×"}
+          </button>
+        )}
       </div>
 
-      {/* Upload Button */}
-      <button
-        type="button"
-        onClick={handleClick}
-        disabled={isUploading}
-        className={`
-          px-4 py-2 rounded-lg font-medium text-sm
-          transition-all duration-200
-          ${
-            isUploading
-              ? "bg-gray-400 cursor-not-allowed"
-              : "bg-indigo-600 hover:bg-indigo-700"
-          }
-          text-white
-        `}
-      >
-        {isUploading ? "Uploading..." : "Change Photo"}
-      </button>
+      {/* Action Buttons */}
+      <div className="flex flex-col items-center space-y-2">
+        <button
+          type="button"
+          onClick={handleClick}
+          disabled={isUploading || isDeleting}
+          className={`
+            px-4 py-2 rounded-lg font-medium text-sm
+            transition-all duration-200
+            ${
+              isUploading || isDeleting
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-indigo-600 hover:bg-indigo-700"
+            }
+            text-white
+          `}
+        >
+          {isUploading ? "Uploading..." : "Change Photo"}
+        </button>
+
+        {hasCustomImage && (
+          <button
+            type="button"
+            onClick={deleteImage}
+            disabled={isDeleting}
+            className={`
+              px-3 py-1 rounded-lg font-medium text-xs
+              transition-all duration-200
+              ${
+                isDeleting
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-red-500 hover:bg-red-600"
+              }
+              text-white
+            `}
+          >
+            {isDeleting ? "Deleting..." : "Remove Photo"}
+          </button>
+        )}
+      </div>
 
       {/* Error Message */}
       {error && (

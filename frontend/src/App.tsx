@@ -21,6 +21,7 @@ import InventoryReceiving from "./pages/InventoryReceiving";
 import SalesHistory from "./pages/SalesHistory";
 import BillingPage from "./pages/BillingPage";
 import Profile from "./pages/Profile";
+import ProductEdit from "./pages/ProductEdit";
 
 const App: React.FC = () => {
   return (
@@ -46,6 +47,7 @@ const App: React.FC = () => {
             <Route path="/sales-history" element={<SalesHistory />} />
             <Route path="/billing" element={<BillingPage />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/products/edit/:id" element={<ProductEdit />} />
           </Route>
         </Route>
       </Routes>

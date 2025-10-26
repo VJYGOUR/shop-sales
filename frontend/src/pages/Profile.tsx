@@ -4,9 +4,13 @@ import ImageUpload from "../components/ImageUpload";
 const Profile = () => {
   const { user, refreshUser } = useAuth();
 
-  const handleImageUpload = async (imageName: string) => {
-    console.log("Image uploaded:", imageName);
-    // Refresh user data when backend is ready to save images
+  const handleImageUpload = async (imageUrl: string) => {
+    console.log("Image uploaded:", imageUrl);
+    await refreshUser();
+  };
+
+  const handleImageDelete = async () => {
+    console.log("Image deleted");
     await refreshUser();
   };
 
@@ -22,6 +26,7 @@ const Profile = () => {
           <div className="flex flex-col items-center mb-8">
             <ImageUpload
               onImageUpload={handleImageUpload}
+              onImageDelete={handleImageDelete}
               currentImage={user?.profileImage}
               size="lg"
             />

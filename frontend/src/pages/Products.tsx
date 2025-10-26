@@ -1,27 +1,25 @@
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
+import { Link } from "react-router-dom";
 import type { Product, CreateProductData } from "../types/index";
 import { productAPI } from "../services/api";
 import Button from "../components/ui/Button";
-import { usePlanLimits } from "../utils/usePlanLimits"; // ADDED IMPORT
+import { usePlanLimits } from "../utils/usePlanLimits";
 
 const Products: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [editingStock, setEditingStock] = useState<string | null>(null);
   const [stockUpdate, setStockUpdate] = useState<number>(0);
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
-  // ADDED HOOK
   const { checkProductLimit } = usePlanLimits();
 
   const {
     register,
     handleSubmit,
     reset,
-    setValue,
     formState: { errors },
   } = useForm<CreateProductData>();
 
@@ -42,41 +40,21 @@ const Products: React.FC = () => {
 
   const onSubmit = async (data: CreateProductData) => {
     try {
-      // ADDED PLAN LIMIT CHECK
-      if (!editingProduct && !checkProductLimit(products.length)) {
+      if (!checkProductLimit(products.length)) {
         alert(
           `Free plan limit reached! Upgrade to add more than ${products.length} products.`
         );
         return;
       }
 
-      if (editingProduct) {
-        await productAPI.updateProduct(editingProduct._id, data);
-      } else {
-        await productAPI.createProduct(data);
-      }
-
+      await productAPI.createProduct(data);
       setShowForm(false);
-      setEditingProduct(null);
       reset();
       loadProducts();
     } catch (error) {
       console.error("Error saving product:", error);
       alert("Error saving product: " + (error as Error).message);
     }
-  };
-
-  // ALL REMAINING FUNCTIONS STAY EXACTLY THE SAME
-  const handleEdit = (product: Product) => {
-    setEditingProduct(product);
-    setShowForm(true);
-
-    setValue("name", product.name);
-    setValue("sku", product.sku || "");
-    setValue("stock", product.stock);
-    setValue("costPrice", product.costPrice);
-    setValue("salePrice", product.salePrice);
-    setValue("category", product.category || "");
   };
 
   const handleDelete = async (productId: string) => {
@@ -92,7 +70,6 @@ const Products: React.FC = () => {
 
   const handleCancel = () => {
     setShowForm(false);
-    setEditingProduct(null);
     reset();
   };
 
@@ -135,7 +112,6 @@ const Products: React.FC = () => {
     );
   }
 
-  // ENTIRE JSX REMAINS EXACTLY THE SAME
   return (
     <div className="p-4 sm:p-6">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6 sm:mb-8">
@@ -149,7 +125,6 @@ const Products: React.FC = () => {
         </div>
         <Button
           onClick={() => {
-            setEditingProduct(null);
             reset();
             setShowForm(true);
           }}
@@ -161,9 +136,7 @@ const Products: React.FC = () => {
 
       {showForm && (
         <div className="bg-white p-4 sm:p-6 rounded-lg shadow-md mb-6 sm:mb-8">
-          <h2 className="text-xl font-semibold mb-4">
-            {editingProduct ? "Edit Product" : "Add New Product"}
-          </h2>
+          <h2 className="text-xl font-semibold mb-4">Add New Product</h2>
           <form
             onSubmit={handleSubmit(onSubmit)}
             className="grid grid-cols-1 md:grid-cols-2 gap-4"
@@ -184,7 +157,7 @@ const Products: React.FC = () => {
               )}
             </div>
 
-            <div className="flex flex-col">
+            {/* <div className="flex flex-col">
               <label className="mb-2 font-medium text-gray-700 text-sm sm:text-base">
                 SKU (Optional)
               </label>
@@ -193,7 +166,7 @@ const Products: React.FC = () => {
                 className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                 placeholder="Enter SKU"
               />
-            </div>
+            </div> */}
 
             <div className="flex flex-col">
               <label className="mb-2 font-medium text-gray-700 text-sm sm:text-base">
@@ -270,7 +243,7 @@ const Products: React.FC = () => {
 
             <div className="md:col-span-2 flex flex-col sm:flex-row gap-3 sm:gap-4">
               <Button type="submit" className="w-full sm:w-auto text-center">
-                {editingProduct ? "Update Product" : "Create Product"}
+                Create Product
               </Button>
               <Button
                 type="button"
@@ -290,6 +263,9 @@ const Products: React.FC = () => {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
+                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Image
+                </th>
                 <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Product
                 </th>
@@ -316,6 +292,22 @@ const Products: React.FC = () => {
                   key={product._id}
                   className={product.stock === 0 ? "bg-red-50" : ""}
                 >
+                  <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                    {product.images && product.images.length > 0 ? (
+                      <img
+                        src={
+                          product.images.find((img) => img.isPrimary)?.url ||
+                          product.images[0].url
+                        }
+                        alt={product.name}
+                        className="w-10 h-10 object-cover rounded border border-gray-200"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 bg-gray-100 rounded flex items-center justify-center text-gray-400 text-xs">
+                        No img
+                      </div>
+                    )}
+                  </td>
                   <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">
                       {product.name}
@@ -385,13 +377,12 @@ const Products: React.FC = () => {
                   </td>
                   <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex flex-col sm:flex-row gap-2">
-                      <Button
-                        onClick={() => handleEdit(product)}
-                        variant="secondary"
-                        className="px-3 py-1 text-xs"
+                      <Link
+                        to={`/products/edit/${product._id}`}
+                        className="inline-flex items-center px-3 py-1 border border-gray-300 rounded-md text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
                       >
                         Edit
-                      </Button>
+                      </Link>
                       <Button
                         onClick={() => setDeleteConfirm(product._id)}
                         variant="danger"
