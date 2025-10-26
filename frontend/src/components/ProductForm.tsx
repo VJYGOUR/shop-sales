@@ -54,7 +54,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
     salePrice: product?.salePrice || "",
     stock: product?.stock || 0,
     category: product?.category || "",
-    sku: product?.sku || "",
+    sku: product?.sku || "Auto-generated on save", // Show placeholder for new products
     images: product?.images || [],
   });
 
@@ -72,6 +72,8 @@ const ProductForm: React.FC<ProductFormProps> = ({
         typeof formData.salePrice === "string"
           ? parseFloat(formData.salePrice) || 0
           : formData.salePrice,
+      // Don't send SKU for new products - backend will generate it
+      sku: product?._id ? formData.sku : "",
     };
 
     onSubmit(submitData);
@@ -201,6 +203,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
           />
         </div>
 
+        {/* READ-ONLY SKU FIELD */}
         <div>
           <label
             htmlFor="sku"
@@ -213,10 +216,15 @@ const ProductForm: React.FC<ProductFormProps> = ({
             id="sku"
             name="sku"
             value={formData.sku}
-            onChange={handleChange}
-            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-indigo-500 focus:border-indigo-500"
-            placeholder="Auto-generated if empty"
+            readOnly // Make it read-only
+            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 bg-gray-50 text-gray-500 cursor-not-allowed"
+            placeholder="Auto-generated on save"
           />
+          <p className="text-xs text-gray-500 mt-1">
+            {product?._id
+              ? "SKU cannot be changed"
+              : "SKU will be auto-generated when you save"}
+          </p>
         </div>
       </div>
 
