@@ -15,6 +15,14 @@ interface User {
   businessName: string;
   profileImage?: string;
   avatar?: string;
+  subscriptionId?: string;
+  subscriptionStatus?:
+    | "active"
+    | "cancelled"
+    | "pending"
+    | "expired"
+    | "completed"
+    | "one_time";
 }
 
 interface AuthContextType {

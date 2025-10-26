@@ -8,6 +8,7 @@ export const usePlanLimits = () => {
   const checkProductLimit = (currentCount: number): boolean => {
     if (!user) return false;
     const maxProducts = PLANS[user.plan].limits.maxProducts;
+    console.log(maxProducts)
     return currentCount < maxProducts;
   };
 

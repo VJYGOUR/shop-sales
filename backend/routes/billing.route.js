@@ -1,10 +1,29 @@
-import express from 'express';
-import { createOrder, verifyPayment } from '../controllers/billing.controllers.js';
-import {protect} from '../middleware/auth.js';
+// routes/billing.js
+import express from "express";
+import {
+  createOrder,
+  verifyPayment,
+  createSubscription,
+  verifySubscription,
+  cancelSubscription,
+  getSubscriptionDetails,
+  handleWebhook,
+} from "../controllers/billing.controllers.js";
+import { protect } from "../middleware/auth.js";
 
 const router = express.Router();
 
-router.post('/create-order', protect, createOrder);
-router.post('/verify-payment', protect, verifyPayment);
+// KEEP EXISTING ROUTES
+router.post("/create-order", protect, createOrder);
+router.post("/verify-payment", protect, verifyPayment);
+
+// ADD NEW SUBSCRIPTION ROUTES
+router.post("/create-subscription", protect, createSubscription);
+router.post("/verify-subscription", protect, verifySubscription);
+router.post("/cancel-subscription", protect, cancelSubscription);
+router.get("/subscription-details", protect, getSubscriptionDetails);
+
+// Webhook doesn't need protect middleware since it's called by Razorpay
+router.post("/webhook-v2", handleWebhook);
 
 export default router;

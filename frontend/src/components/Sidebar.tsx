@@ -22,6 +22,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     { name: "Inventory", href: "/inventory", icon: "📋" },
     { name: "Customers", href: "/customers", icon: "👥" },
     { name: "Reports", href: "/reports", icon: "📈" },
+    { name: "billing", href: "/billing", icon: "b" },
     {
       name: "Barcode Tools",
       href: "/barcode-tools",
