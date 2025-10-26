@@ -61,7 +61,7 @@ export interface Product {
   costPrice: number;
   salePrice: number;
   category?: string;
-  images: ProductImage[]; //
+  images?: ProductImage[]; //
   sku?: string;
   barcode?: string; // Add barcode field
   qrCode?: string; // Add QR code field
