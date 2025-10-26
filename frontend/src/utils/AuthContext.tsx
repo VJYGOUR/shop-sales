@@ -13,6 +13,8 @@ interface User {
   email: string;
   plan: "free" | "paid";
   businessName: string;
+  profileImage?: string;
+  avatar?: string;
 }
 
 interface AuthContextType {

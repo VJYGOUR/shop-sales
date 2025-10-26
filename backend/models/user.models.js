@@ -36,6 +36,10 @@ const userSchema = new mongoose.Schema(
     phoneNumber: {
       type: String,
     },
+    profileImage: {
+      type: String,
+      default: null,
+    },
     cartItems: [
       {
         quantity: { type: Number, default: 1 },

@@ -309,7 +309,8 @@ export const me = async (req, res) => {
         phoneNumber: user.phoneNumber,
         // ADD THESE TWO LINES:
         plan: user.plan || "free", // Default to 'free' if not set
-        businessName: user.businessName || user.name + "'s Business", // Default if not set
+        businessName: user.businessName || user.name + "'s Business",
+        profileImage: user.profileImage || null, // Default if not set
       },
     });
   } catch (err) {

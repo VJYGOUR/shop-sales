@@ -4,6 +4,7 @@ import authRoutes from "./routes/auth.route.js";
 import productRoutes from "./routes/product.route.js";
 import salesRoutes from "./routes/sales.route.js";
 import billingRoutes from "./routes/billing.route.js";
+import uploadRoutes from "./routes/upload.route.js";
 import connectDB from "./lib/db.js";
 import cookieParser from "cookie-parser";
 import cors from "cors";
@@ -36,6 +37,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/sales", salesRoutes);
 app.use("/api/billing", billingRoutes);
+app.use("/api/upload", uploadRoutes);
 
 // ✅ Serve React build (for production)
 const clientBuildPath = path.join(__dirname, "../frontend/dist");
