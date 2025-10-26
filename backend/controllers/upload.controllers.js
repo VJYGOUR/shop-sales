@@ -56,7 +56,7 @@ export const uploadProfileImage = async (req, res) => {
 
     // Upload to Cloudinary
     const uploadResult = await cloudinary.uploader.upload(dataURI, {
-      folder: "biztrack-profiles",
+      folder: "Stoq-profiles",
       public_id: `profile-${req.user.id}-${Date.now()}`,
       overwrite: true,
       transformation: [

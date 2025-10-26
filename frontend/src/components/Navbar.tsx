@@ -42,7 +42,7 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuClick, showMenu }) => {
           to={user ? "/dashboard" : "/"}
           className="text-xl font-bold hover:text-gray-300 transition-colors"
         >
-          BizTrack
+          Stoq
         </Link>
       </div>
 

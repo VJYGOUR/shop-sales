@@ -14,7 +14,7 @@ const Home: React.FC = () => {
             <div className="flex items-center">
               <div className="flex-shrink-0">
                 <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  BizTrack
+                  Stoq
                 </h1>
               </div>
             </div>
@@ -214,7 +214,7 @@ const Home: React.FC = () => {
             Ready to Transform Your Business?
           </h2>
           <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
-            Join thousands of businesses that use BizTrack to streamline their
+            Join thousands of businesses that use Stoq to streamline their
             operations and boost profitability.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -254,7 +254,7 @@ const Home: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div>
               <h3 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent mb-4">
-                BizTrack
+                Stoq
               </h3>
               <p className="text-gray-400">
                 Empowering businesses with smart management solutions.
@@ -328,7 +328,7 @@ const Home: React.FC = () => {
             </div>
           </div>
           <div className="border-t border-gray-800 mt-12 pt-8 text-center text-gray-400">
-            <p>&copy; 2024 BizTrack. All rights reserved.</p>
+            <p>&copy; 2024 Stoq. All rights reserved.</p>
           </div>
         </div>
       </footer>

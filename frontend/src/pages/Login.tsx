@@ -72,9 +72,11 @@ const Login = () => {
                 />
               </svg>
             </div>
-            <h2 className="text-3xl font-bold text-gray-900">Welcome Back</h2>
+            <h2 className="text-3xl font-bold text-gray-900">
+              Welcome back to Stoq
+            </h2>
             <p className="text-gray-600 text-sm">
-              Sign in to your inventory dashboard
+              Sign in to your inventory management
             </p>
           </div>
 

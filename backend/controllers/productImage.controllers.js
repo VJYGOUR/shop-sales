@@ -57,7 +57,7 @@ export const uploadProductImages = async (req, res) => {
 
       // Upload to Cloudinary
       const uploadResult = await cloudinary.uploader.upload(dataURI, {
-        folder: "biztrack-products",
+        folder: "Stoq-products",
         public_id: `product-${productId}-${Date.now()}-${index}`,
         transformation: [
           { width: 800, height: 600, crop: "limit" }, // Maintain aspect ratio

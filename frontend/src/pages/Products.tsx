@@ -120,7 +120,7 @@ const Products: React.FC = () => {
             Products
           </h1>
           <p className="text-gray-600 text-sm sm:text-base">
-            Manage your product inventory
+            Manage your Stoq inventory
           </p>
         </div>
         <Button

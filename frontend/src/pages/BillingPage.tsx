@@ -119,7 +119,7 @@ const BillingPage = () => {
         key: key,
         amount: amount,
         currency: currency,
-        name: "BizTrack",
+        name: "Stoq",
         description: "Professional Plan Subscription",
         order_id: id,
         handler: async function (response: RazorpayResponse) {

@@ -54,7 +54,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         `}
       >
         <div className="flex items-center justify-between h-16 px-4 border-b border-gray-700">
-          <h1 className="text-xl font-bold text-white">Navigation</h1>
+          <h1 className="text-xl font-bold text-white">Stoq</h1>
           <button
             onClick={onClose}
             className="p-2 rounded-md text-gray-400 hover:text-white lg:hidden"

@@ -57,10 +57,10 @@ export const sendVerificationEmail = async (email, verificationToken) => {
     const msg = {
       to: email,
       from: process.env.SENDGRID_FROM_EMAIL,
-      subject: "Verify Your Email Address",
+      subject: "Verify Your Stoq Account",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2>Verify Your Email Address</h2>
+          <h2>PLease verify Your Email to start using Stoq</h2>
           <p>Please click the button below to verify your email address:</p>
           <a href="${verificationUrl}" 
              style="background-color: #007bff; color: white; padding: 12px 24px; 
