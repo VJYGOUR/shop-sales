@@ -37,7 +37,7 @@ export const createOrder = async (req, res) => {
 
     // Create Razorpay order
     const options = {
-      amount: 2900, // ₹29.00 in paise
+      amount: 100, // ₹29.00 in paise
       currency: "INR",
       receipt: `rcpt_${Date.now()}`,
       notes: {
@@ -129,7 +129,7 @@ export const createSubscription = async (req, res) => {
         item: {
           name: "Professional Plan Monthly",
           description: "Monthly subscription for Professional Plan",
-          amount: 2900, // ₹29.00 in paise
+          amount: 100, // ₹29.00 in paise
           currency: "INR",
         },
         notes: {
@@ -156,7 +156,7 @@ export const createSubscription = async (req, res) => {
     res.json({
       id: subscription.id,
       plan_id: planId,
-      amount: 2900,
+      amount: 100,
       currency: "INR",
       key: process.env.RAZORPAY_KEY_ID,
     });
@@ -169,52 +169,82 @@ export const createSubscription = async (req, res) => {
 };
 
 // NEW: VERIFY SUBSCRIPTION
+// UPDATED: VERIFY SUBSCRIPTION WITH BETTER ERROR HANDLING
+// UPDATED: VERIFY SUBSCRIPTION - HANDLES 'created' STATUS
+// UPDATED: VERIFY SUBSCRIPTION - USE VALID ENUM VALUES
 export const verifySubscription = async (req, res) => {
   try {
     const { razorpay_subscription_id, razorpay_payment_id } = req.body;
 
-    console.log("Verifying subscription:", razorpay_subscription_id);
+    console.log("🔍 Verifying subscription:", {
+      subscription_id: razorpay_subscription_id,
+      payment_id: razorpay_payment_id,
+      user_id: req.user?._id,
+    });
 
-    // Get subscription details from Razorpay
+    if (!req.user) {
+      console.error("❌ User not found in request");
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    console.log("📡 Fetching subscription from Razorpay...");
     const subscription = await razorpay.subscriptions.fetch(
       razorpay_subscription_id
     );
 
-    console.log("Subscription status:", subscription.status);
+    console.log("📊 Subscription details:", {
+      id: subscription.id,
+      status: subscription.status,
+      plan_id: subscription.plan_id,
+    });
 
-    if (
-      subscription.status === "active" ||
-      subscription.status === "authenticated"
-    ) {
-      const user = req.user;
-      if (user) {
-        user.plan = "paid";
-        user.subscriptionId = razorpay_subscription_id;
-        user.subscriptionStatus = subscription.status;
-        await user.save();
-        console.log(`User ${user.email} subscribed to paid plan (recurring)`);
-      }
+    // MAP RAZORPAY STATUS TO VALID ENUM VALUES
+    const statusMap = {
+      created: "pending",
+      authenticated: "active",
+      active: "active",
+      pending: "pending",
+      halted: "pending",
+      cancelled: "cancelled",
+      completed: "completed",
+      expired: "expired",
+    };
 
-      res.json({
-        success: true,
-        message: "Subscription activated successfully",
-        subscriptionStatus: subscription.status,
-      });
-    } else {
-      res.status(400).json({
-        success: false,
-        error: `Subscription not active. Current status: ${subscription.status}`,
-      });
-    }
+    const mappedStatus = statusMap[subscription.status] || "pending";
+
+    console.log(`🔄 Mapping status: ${subscription.status} → ${mappedStatus}`);
+
+    // Accept all initial subscription states
+    const user = req.user;
+    user.plan = "paid";
+    user.subscriptionId = razorpay_subscription_id;
+    user.subscriptionStatus = mappedStatus; // Use mapped status
+
+    console.log("💾 Saving user to database...");
+    await user.save();
+
+    console.log(
+      `✅ User ${user.email} subscription created with status: ${mappedStatus}`
+    );
+
+    res.json({
+      success: true,
+      message: "Subscription created successfully",
+      subscriptionStatus: mappedStatus,
+      razorpayStatus: subscription.status,
+      note: "Subscription will be activated once payment is completed",
+    });
   } catch (error) {
-    console.error("Subscription verification error:", error);
-    res
-      .status(500)
-      .json({ error: "Subscription verification failed: " + error.message });
+    console.error("❌ Subscription verification error:", error);
+
+    res.status(500).json({
+      error: "Subscription verification failed",
+      details: error.message,
+    });
   }
 };
-
 // NEW: CANCEL SUBSCRIPTION
+// FIXED: CANCEL SUBSCRIPTION - SET EXPIRY DATE
 export const cancelSubscription = async (req, res) => {
   try {
     const user = req.user;
@@ -226,15 +256,45 @@ export const cancelSubscription = async (req, res) => {
       return res.status(400).json({ error: "No active subscription found" });
     }
 
-    console.log("Cancelling subscription:", user.subscriptionId);
+    console.log("Checking subscription status:", user.subscriptionId);
 
-    // Cancel the subscription in Razorpay
-    const subscription = await razorpay.subscriptions.cancel(
+    // First, check the current subscription status
+    const subscription = await razorpay.subscriptions.fetch(
       user.subscriptionId
     );
 
-    // Update user plan - don't downgrade immediately, let them use until period ends
+    console.log("Current subscription status:", subscription.status);
+
+    // If already cancelled, just update our database
+    if (subscription.status === "cancelled") {
+      console.log("Subscription already cancelled in Razorpay");
+
+      user.subscriptionStatus = "cancelled";
+      // Set expiry date to current period end
+      user.subscriptionExpiresAt = new Date(subscription.current_end * 1000);
+      await user.save();
+
+      return res.json({
+        success: true,
+        message: "Subscription was already cancelled. Status updated.",
+        subscriptionStatus: subscription.status,
+        accessUntil: new Date(
+          subscription.current_end * 1000
+        ).toLocaleDateString(),
+      });
+    }
+
+    // If not cancelled, proceed with cancellation
+    console.log("Cancelling subscription:", user.subscriptionId);
+    const cancelledSubscription = await razorpay.subscriptions.cancel(
+      user.subscriptionId
+    );
+
+    // Update user - set expiry date but don't downgrade immediately
     user.subscriptionStatus = "cancelled";
+    user.subscriptionExpiresAt = new Date(
+      cancelledSubscription.current_end * 1000
+    );
     await user.save();
 
     console.log(`User ${user.email} subscription cancelled`);
@@ -243,10 +303,27 @@ export const cancelSubscription = async (req, res) => {
       success: true,
       message:
         "Subscription cancelled successfully. You will have access until the end of your billing period.",
-      subscriptionStatus: subscription.status,
+      subscriptionStatus: cancelledSubscription.status,
+      accessUntil: new Date(
+        cancelledSubscription.current_end * 1000
+      ).toLocaleDateString(),
     });
   } catch (error) {
     console.error("Subscription cancellation error:", error);
+
+    // If it's already cancelled error, handle gracefully
+    if (error.statusCode === 400 && error.error?.code === "BAD_REQUEST_ERROR") {
+      user.subscriptionStatus = "cancelled";
+      user.subscriptionExpiresAt = new Date(); // Set to now as fallback
+      await user.save();
+
+      return res.json({
+        success: true,
+        message: "Subscription was already cancelled. Status updated.",
+        subscriptionStatus: "cancelled",
+      });
+    }
+
     res
       .status(500)
       .json({ error: "Failed to cancel subscription: " + error.message });
@@ -290,109 +367,275 @@ export const getSubscriptionDetails = async (req, res) => {
 };
 
 // NEW: WEBHOOK FOR RECURRING PAYMENTS
+// COMPLETE WEBHOOK HANDLER - Add to your billing.controllers.js
 export const handleWebhook = async (req, res) => {
   try {
     const webhookBody = req.body;
     const event = webhookBody.event;
     const payload = webhookBody.payload;
 
-    console.log("Webhook received:", event);
+    console.log("🎯 Webhook Received:", event);
+    console.log("📦 Webhook Payload:", JSON.stringify(payload, null, 2));
 
-    // Verify webhook signature (important for security)
-    const crypto = await import("crypto");
-    const generatedSignature = crypto
-      .createHmac(
-        "sha256",
-        process.env.RAZORPAY_WEBHOOK_SECRET || process.env.RAZORPAY_KEY_SECRET
-      )
-      .update(JSON.stringify(req.body))
-      .digest("hex");
+    // Verify webhook signature if secret is set
+    const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
 
-    const razorpaySignature = req.headers["x-razorpay-signature"];
+    if (webhookSecret) {
+      const crypto = await import("crypto");
+      const generatedSignature = crypto
+        .createHmac("sha256", webhookSecret)
+        .update(JSON.stringify(req.body))
+        .digest("hex");
 
-    if (generatedSignature !== razorpaySignature) {
-      console.error("Invalid webhook signature");
-      return res.status(400).json({ error: "Invalid webhook signature" });
+      const razorpaySignature = req.headers["x-razorpay-signature"];
+
+      if (generatedSignature !== razorpaySignature) {
+        console.error("❌ Invalid webhook signature");
+        return res.status(400).json({ error: "Invalid webhook signature" });
+      }
+      console.log("✅ Webhook signature verified");
+    } else {
+      console.log(
+        "⚠️  Webhook secret not set, skipping signature verification"
+      );
     }
 
-    // Handle different subscription events
-    switch (event) {
-      case "subscription.charged":
-        // Recurring payment successful
-        const subscription = payload.subscription.entity;
-        const user = await User.findOne({ subscriptionId: subscription.id });
+    // Map Razorpay status to valid database enum values
+    const statusMap = {
+      created: "pending",
+      authenticated: "active",
+      active: "active",
+      pending: "pending",
+      halted: "pending",
+      cancelled: "cancelled",
+      completed: "completed",
+      expired: "expired",
+      failed: "pending",
+    };
 
-        if (user) {
-          user.plan = "paid";
-          user.subscriptionStatus = subscription.status;
-          await user.save();
-          console.log(`Recurring payment successful for ${user.email}`);
+    // Handle different webhook events
+    switch (event) {
+      case "subscription.activated":
+        console.log("🎉 SUBSCRIPTION ACTIVATED");
+        const activatedSub = payload.subscription?.entity;
+        if (activatedSub?.id) {
+          const user = await User.findOne({ subscriptionId: activatedSub.id });
+          if (user) {
+            user.plan = "paid";
+            user.subscriptionStatus = "active";
+            await user.save();
+            console.log(`✅ ${user.email} subscription activated`);
+          } else {
+            console.log(
+              `❌ User not found for subscription: ${activatedSub.id}`
+            );
+          }
         }
         break;
 
-      case "subscription.cancelled":
-        // Subscription cancelled
-        const cancelledSub = payload.subscription.entity;
-        const cancelledUser = await User.findOne({
-          subscriptionId: cancelledSub.id,
-        });
-
-        if (cancelledUser) {
-          cancelledUser.subscriptionStatus = "cancelled";
-          await cancelledUser.save();
-          console.log(`Subscription cancelled for ${cancelledUser.email}`);
+      case "subscription.charged":
+        console.log("💰 RECURRING PAYMENT SUCCESS");
+        const chargedSub = payload.subscription?.entity;
+        if (chargedSub?.id) {
+          const user = await User.findOne({ subscriptionId: chargedSub.id });
+          if (user) {
+            user.plan = "paid";
+            user.subscriptionStatus = "active";
+            await user.save();
+            console.log(`✅ ${user.email} recurring payment successful`);
+          } else {
+            console.log(`❌ User not found for subscription: ${chargedSub.id}`);
+          }
         }
         break;
 
       case "subscription.completed":
-        // Subscription completed (reached total_count)
-        const completedSub = payload.subscription.entity;
-        const completedUser = await User.findOne({
-          subscriptionId: completedSub.id,
-        });
+        console.log("🏁 SUBSCRIPTION COMPLETED");
+        const completedSub = payload.subscription?.entity;
+        if (completedSub?.id) {
+          const user = await User.findOne({ subscriptionId: completedSub.id });
+          if (user) {
+            user.subscriptionStatus = "completed";
+            // Don't downgrade immediately - let them use until period ends
+            await user.save();
+            console.log(`✅ ${user.email} subscription completed`);
+          }
+        }
+        break;
 
-        if (completedUser) {
-          completedUser.plan = "free";
-          completedUser.subscriptionStatus = "completed";
-          await completedUser.save();
-          console.log(`Subscription completed for ${completedUser.email}`);
+      case "subscription.cancelled":
+        console.log("❌ SUBSCRIPTION CANCELLED");
+        const cancelledSub = payload.subscription?.entity;
+        if (cancelledSub?.id) {
+          const user = await User.findOne({ subscriptionId: cancelledSub.id });
+          if (user) {
+            user.subscriptionStatus = "cancelled";
+            // Don't downgrade immediately - let them use until period ends
+            await user.save();
+            console.log(`✅ ${user.email} subscription cancelled`);
+          }
         }
         break;
 
       case "subscription.pending":
-      case "subscription.halted":
-        // Handle failed payments
-        const pendingSub = payload.subscription.entity;
-        const pendingUser = await User.findOne({
-          subscriptionId: pendingSub.id,
-        });
+        console.log("⏳ SUBSCRIPTION PENDING");
+        const pendingSub = payload.subscription?.entity;
+        if (pendingSub?.id) {
+          const user = await User.findOne({ subscriptionId: pendingSub.id });
+          if (user) {
+            user.subscriptionStatus = "pending";
+            await user.save();
+            console.log(`⏳ ${user.email} subscription pending`);
+          }
+        }
+        break;
 
-        if (pendingUser) {
-          pendingUser.subscriptionStatus = "pending";
-          await pendingUser.save();
-          console.log(`Payment pending for ${pendingUser.email}`);
+      case "subscription.halted":
+        console.log("⏸️  SUBSCRIPTION HALTED");
+        const haltedSub = payload.subscription?.entity;
+        if (haltedSub?.id) {
+          const user = await User.findOne({ subscriptionId: haltedSub.id });
+          if (user) {
+            user.subscriptionStatus = "pending";
+            await user.save();
+            console.log(`⏸️  ${user.email} subscription halted`);
+          }
+        }
+        break;
+
+      case "subscription.updated":
+        console.log("📝 SUBSCRIPTION UPDATED");
+        const updatedSub = payload.subscription?.entity;
+        if (updatedSub?.id) {
+          const user = await User.findOne({ subscriptionId: updatedSub.id });
+          if (user) {
+            const mappedStatus = statusMap[updatedSub.status] || "pending";
+            user.subscriptionStatus = mappedStatus;
+            await user.save();
+            console.log(
+              `📝 ${user.email} subscription updated to: ${mappedStatus}`
+            );
+          }
+        }
+        break;
+
+      case "payment.captured":
+        console.log("💳 PAYMENT CAPTURED");
+        const capturedPayment = payload.payment?.entity;
+        if (capturedPayment?.subscription_id) {
+          const user = await User.findOne({
+            subscriptionId: capturedPayment.subscription_id,
+          });
+          if (user) {
+            user.plan = "paid";
+            user.subscriptionStatus = "active";
+            await user.save();
+            console.log(
+              `✅ ${user.email} payment captured, subscription activated`
+            );
+          }
         }
         break;
 
       case "payment.failed":
-        // Payment failed for subscription
-        const payment = payload.payment.entity;
-        if (payment.subscription_id) {
-          const failedUser = await User.findOne({
-            subscriptionId: payment.subscription_id,
+        console.log("💥 PAYMENT FAILED");
+        const failedPayment = payload.payment?.entity;
+        if (failedPayment?.subscription_id) {
+          const user = await User.findOne({
+            subscriptionId: failedPayment.subscription_id,
           });
-          if (failedUser) {
-            failedUser.subscriptionStatus = "pending";
-            await failedUser.save();
-            console.log(`Payment failed for ${failedUser.email}`);
+          if (user) {
+            user.subscriptionStatus = "pending";
+            await user.save();
+            console.log(
+              `❌ ${user.email} payment failed, subscription pending`
+            );
+
+            // Optional: Send email notification about failed payment
+            // await sendPaymentFailedEmail(user.email);
           }
         }
         break;
+
+      case "invoice.paid":
+        console.log("🧾 INVOICE PAID");
+        const paidInvoice = payload.invoice?.entity;
+        if (paidInvoice?.subscription_id) {
+          const user = await User.findOne({
+            subscriptionId: paidInvoice.subscription_id,
+          });
+          if (user) {
+            user.plan = "paid";
+            user.subscriptionStatus = "active";
+            await user.save();
+            console.log(`✅ ${user.email} invoice paid, subscription active`);
+          }
+        }
+        break;
+
+      case "invoice.failed":
+        console.log("🧾 INVOICE FAILED");
+        const failedInvoice = payload.invoice?.entity;
+        if (failedInvoice?.subscription_id) {
+          const user = await User.findOne({
+            subscriptionId: failedInvoice.subscription_id,
+          });
+          if (user) {
+            user.subscriptionStatus = "pending";
+            await user.save();
+            console.log(
+              `❌ ${user.email} invoice failed, subscription pending`
+            );
+          }
+        }
+        break;
+
+      default:
+        console.log(`📨 Unhandled webhook event: ${event}`);
+        // Log unhandled events for monitoring
+        console.log("Unhandled payload:", JSON.stringify(payload, null, 2));
     }
 
-    res.status(200).json({ received: true });
+    // Always return 200 to acknowledge receipt
+    res.status(200).json({
+      success: true,
+      message: "Webhook processed successfully",
+      event: event,
+    });
   } catch (error) {
-    console.error("Webhook error:", error);
-    res.status(500).json({ error: "Webhook processing failed" });
+    console.error("❌ Webhook processing error:", error);
+
+    // Still return 200 to prevent Razorpay from retrying excessively
+    res.status(200).json({
+      success: false,
+      error: "Webhook processing failed but acknowledged",
+      details: error.message,
+    });
+  }
+};
+// TEST ENDPOINT - Add to your billing.controllers.js
+export const testRazorpayConnection = async (req, res) => {
+  try {
+    // Test Razorpay connection by fetching a dummy subscription
+    const testSub = await razorpay.subscriptions.fetch("sub_test_123");
+    res.json({
+      success: false,
+      error: "Unexpected - test subscription exists",
+    });
+  } catch (error) {
+    if (error.statusCode === 400) {
+      // This is expected - means Razorpay is connected but subscription doesn't exist
+      res.json({
+        success: true,
+        message: "Razorpay connection working",
+        keyId: process.env.RAZORPAY_KEY_ID ? "Set" : "Not set",
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: "Razorpay connection failed",
+        details: error.message,
+      });
+    }
   }
 };

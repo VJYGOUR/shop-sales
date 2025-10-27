@@ -40,7 +40,12 @@ const userSchema = new mongoose.Schema(
         "expired",
         "completed",
         "one_time",
+        "created",
       ],
+      default: null,
+    },
+    subscriptionExpiresAt: {
+      type: Date,
       default: null,
     },
     businessName: {
@@ -68,6 +73,7 @@ const userSchema = new mongoose.Schema(
     emailVerificationToken: String,
     emailVerificationExpires: Date,
   },
+
   { timestamps: true }
 );
 

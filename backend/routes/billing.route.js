@@ -8,6 +8,7 @@ import {
   cancelSubscription,
   getSubscriptionDetails,
   handleWebhook,
+  testRazorpayConnection,
 } from "../controllers/billing.controllers.js";
 import { protect } from "../middleware/auth.js";
 
@@ -25,5 +26,7 @@ router.get("/subscription-details", protect, getSubscriptionDetails);
 
 // Webhook doesn't need protect middleware since it's called by Razorpay
 router.post("/webhook-v2", handleWebhook);
+// In routes/billing.js
+router.get("/test-razorpay", protect, testRazorpayConnection);
 
 export default router;

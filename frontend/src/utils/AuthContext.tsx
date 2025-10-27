@@ -1,9 +1,8 @@
+// utils/AuthContext.tsx
+// utils/AuthContext.tsx
 /* eslint-disable react-refresh/only-export-components */
-
 import React, { createContext, useContext, useEffect, useState } from "react";
-
 import type { ReactNode } from "react";
-
 import axiosInstance from "../axios/axiosInstance";
 import handleApiError from "./handleApiError";
 
@@ -16,13 +15,9 @@ interface User {
   profileImage?: string;
   avatar?: string;
   subscriptionId?: string;
-  subscriptionStatus?:
-    | "active"
-    | "cancelled"
-    | "pending"
-    | "expired"
-    | "completed"
-    | "one_time";
+  subscriptionStatus?: string;
+  phoneNumber?: string;
+  subscriptionExpiresAt?: Date | string; // Add this line
 }
 
 interface AuthContextType {
@@ -41,18 +36,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
-  // Check auth on mount
-  useEffect(() => {
-    refreshUser();
-  }, []);
-
   // Fetch user info from backend
-  const refreshUser = async () => {
+  const refreshUser = async (): Promise<void> => {
     setLoading(true);
     try {
       const res = await axiosInstance.get<{ user: User }>("/auth/me");
       setUser(res.data.user);
-    } catch (err) {
+    } catch (err: unknown) {
       setUser(null);
       handleApiError(err);
     } finally {
@@ -60,27 +50,35 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     }
   };
 
-  // Login (example: after successful backend login)
-  const login = async () => {
-    // After login API, call refreshUser to update state
+  // Check auth on mount - only once
+  useEffect(() => {
+    refreshUser();
+  }, []); // Empty dependency array
+
+  // Login
+  const login = async (): Promise<void> => {
     await refreshUser();
   };
 
   // Logout
-  const logout = async () => {
+  const logout = async (): Promise<void> => {
     try {
       await axiosInstance.post("/auth/logout");
       setUser(null);
-    } catch (err) {
+    } catch (err: unknown) {
       handleApiError(err);
     }
   };
 
-  return (
-    <AuthContext.Provider value={{ user, loading, login, logout, refreshUser }}>
-      {children}
-    </AuthContext.Provider>
-  );
+  const value: AuthContextType = {
+    user,
+    loading,
+    login,
+    logout,
+    refreshUser,
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = (): AuthContextType => {

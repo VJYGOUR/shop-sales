@@ -311,6 +311,8 @@ export const me = async (req, res) => {
         plan: user.plan || "free", // Default to 'free' if not set
         businessName: user.businessName || user.name + "'s Business",
         profileImage: user.profileImage || null, // Default if not set
+        subscriptionId: user.subscriptionId,
+        subscriptionStatus: user.subscriptionStatus,
       },
     });
   } catch (err) {

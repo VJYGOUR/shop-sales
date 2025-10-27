@@ -1,7 +1,7 @@
 // src/pages/BillingPage.tsx
 import { useAuth } from "../utils/AuthContext";
 import { PLANS } from "../utils/plans";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axiosInstance from "../axios/axiosInstance";
 
 // Interfaces
@@ -59,6 +59,7 @@ interface UserWithPhone {
   contact?: string;
   subscriptionId?: string;
   subscriptionStatus?: string;
+  subscriptionExpiresAt?: string;
 }
 
 declare global {
@@ -72,14 +73,20 @@ declare global {
 }
 
 const BillingPage = () => {
-  const { user, refreshUser } = useAuth();
-  const [loading, setLoading] = useState(false);
-  const [subscriptionLoading, setSubscriptionLoading] = useState(false);
-  const [cancelling, setCancelling] = useState(false);
-  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const { user, refreshUser, loading: authLoading } = useAuth();
+  const [loading, setLoading] = useState<boolean>(false);
+  const [subscriptionLoading, setSubscriptionLoading] =
+    useState<boolean>(false);
+  const [cancelling, setCancelling] = useState<boolean>(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState<boolean>(false);
   const [paymentType, setPaymentType] = useState<"one-time" | "subscription">(
     "subscription"
   );
+
+  // Load user data only once
+  useEffect(() => {
+    refreshUser();
+  }, []);
 
   const loadRazorpayScript = (): Promise<boolean> => {
     return new Promise((resolve) => {
@@ -96,7 +103,7 @@ const BillingPage = () => {
     });
   };
 
-  // KEEP EXISTING ONE-TIME PAYMENT LOGIC (EXACTLY AS IS)
+  // One-time payment logic
   const handleUpgrade = async (): Promise<void> => {
     if (typeof window !== "undefined") {
       Object.keys(localStorage).forEach((key) => {
@@ -156,8 +163,8 @@ const BillingPage = () => {
           }
         },
         prefill: {
-          name: user?.name,
-          email: user?.email,
+          name: user?.name || "",
+          email: user?.email || "",
           contact: getUserPhoneNumber(),
         },
         theme: {
@@ -181,7 +188,7 @@ const BillingPage = () => {
     }
   };
 
-  // NEW: SUBSCRIPTION PAYMENT LOGIC
+  // Subscription payment logic
   const handleSubscription = async (): Promise<void> => {
     if (typeof window !== "undefined") {
       Object.keys(localStorage).forEach((key) => {
@@ -246,8 +253,8 @@ const BillingPage = () => {
           }
         },
         prefill: {
-          name: user?.name,
-          email: user?.email,
+          name: user?.name || "",
+          email: user?.email || "",
           contact: getUserPhoneNumber(),
         },
         theme: {
@@ -271,7 +278,6 @@ const BillingPage = () => {
     }
   };
 
-  // KEEP EXISTING MANUAL VERIFY LOGIC
   const handleManualVerify = async (): Promise<void> => {
     try {
       await refreshUser();
@@ -288,21 +294,38 @@ const BillingPage = () => {
     }
   };
 
-  // NEW: CANCEL SUBSCRIPTION LOGIC
   const handleCancelSubscription = async (): Promise<void> => {
     try {
       setCancelling(true);
-      await axiosInstance.post("/billing/cancel-subscription");
-      await refreshUser();
-      alert(
-        "Subscription cancelled successfully. You'll have access until the end of your billing period."
-      );
-      setShowCancelConfirm(false);
-    } catch (error) {
+      const response = await axiosInstance.post("/billing/cancel-subscription");
+
+      if (response.data.success) {
+        alert(
+          "Subscription cancelled successfully. You'll have access until the end of your billing period."
+        );
+        await refreshUser();
+        setShowCancelConfirm(false);
+      } else {
+        alert("Failed to cancel subscription: " + response.data.error);
+      }
+    } catch (error: unknown) {
       console.error("Cancellation failed:", error);
-      alert("Failed to cancel subscription. Please try again.");
+      let errorMessage = "Failed to cancel subscription. Please try again.";
+      if (error instanceof Error) {
+        errorMessage += ` Error: ${error.message}`;
+      }
+      alert(errorMessage);
     } finally {
       setCancelling(false);
+    }
+  };
+
+  const handleResubscribe = async (): Promise<void> => {
+    try {
+      await handleSubscription();
+    } catch (error) {
+      console.error("Resubscribe failed:", error);
+      alert("Failed to resubscribe. Please try again.");
     }
   };
 
@@ -316,7 +339,26 @@ const BillingPage = () => {
     });
   };
 
-  const getPlanBenefits = (plan: keyof typeof PLANS) => {
+  const getActualExpiryDate = (): string => {
+    if (user?.subscriptionExpiresAt) {
+      return new Date(user.subscriptionExpiresAt).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+    }
+
+    // Fallback to calculated date (one month from now)
+    const today = new Date();
+    const nextMonth = new Date(today.setMonth(today.getMonth() + 1));
+    return nextMonth.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  };
+
+  const getPlanBenefits = (plan: keyof typeof PLANS): string[] => {
     const benefits = {
       free: [
         "100 product limit",
@@ -340,7 +382,7 @@ const BillingPage = () => {
     return benefits[plan];
   };
 
-  const getFeatureIcon = (feature: string) => {
+  const getFeatureIcon = (feature: string): string => {
     if (feature.includes("limit") || feature.includes("unlimited")) return "📊";
     if (feature.includes("analytics") || feature.includes("report"))
       return "📈";
@@ -351,8 +393,35 @@ const BillingPage = () => {
     return "✓";
   };
 
-  const isSubscribedUser =
-    user?.subscriptionId && user?.subscriptionStatus === "active";
+  // Fixed subscription detection logic
+  const isSubscribedUser = Boolean(
+    user?.subscriptionId &&
+      user?.subscriptionStatus &&
+      user.subscriptionStatus !== "cancelled" &&
+      user.subscriptionStatus !== "expired" &&
+      user.subscriptionStatus !== "completed"
+  );
+
+  const isOneTimeUser = user?.plan === "paid" && !user?.subscriptionId;
+  console.log(isOneTimeUser);
+  const isCancelledUser =
+    user?.subscriptionId && user?.subscriptionStatus === "cancelled";
+  const isExpiredUser =
+    user?.subscriptionId && user?.subscriptionStatus === "expired";
+
+  // Show loading state while auth is loading
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 py-8">
@@ -374,13 +443,19 @@ const BillingPage = () => {
             <div className="flex flex-col md:flex-row md:items-center md:justify-between">
               <div className="flex items-center space-x-4 mb-4 md:mb-0">
                 <div className="flex items-center justify-center w-12 h-12 bg-green-100 rounded-full">
-                  <span className="text-2xl">🎉</span>
+                  <span className="text-2xl">
+                    {isCancelledUser || isExpiredUser ? "❌" : "🎉"}
+                  </span>
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-green-800">
                     {isSubscribedUser
                       ? "Active Professional Subscription"
-                      : "Active Professional Plan"}
+                      : isExpiredUser
+                      ? "Expired Professional Subscription"
+                      : isCancelledUser
+                      ? "Cancelled Professional Subscription"
+                      : "Active Professional Plan (One-Time)"}
                   </h3>
                   <p className="text-green-600">
                     {isSubscribedUser ? (
@@ -388,17 +463,46 @@ const BillingPage = () => {
                         Next billing date:{" "}
                         <strong>{getNextBillingDate()}</strong>
                       </>
+                    ) : isCancelledUser ? (
+                      <>
+                        Access until: <strong>{getActualExpiryDate()}</strong>
+                      </>
+                    ) : isExpiredUser ? (
+                      <>
+                        Subscription expired on:{" "}
+                        <strong>{getActualExpiryDate()}</strong>
+                      </>
                     ) : (
                       <>One-time payment - Lifetime access</>
                     )}
                   </p>
-                  {isSubscribedUser && (
-                    <p className="text-sm text-green-500 mt-1">
-                      Subscription ID: {user.subscriptionId}
-                    </p>
+                  {user.subscriptionId && (
+                    <div className="mt-2 space-y-1">
+                      <p className="text-sm text-green-600">
+                        Subscription ID: {user.subscriptionId}
+                      </p>
+                      {user.subscriptionStatus && (
+                        <p className="text-sm text-green-600">
+                          Status:{" "}
+                          <span className="capitalize">
+                            {user.subscriptionStatus}
+                          </span>
+                        </p>
+                      )}
+                      {user.subscriptionExpiresAt &&
+                        (isCancelledUser || isExpiredUser) && (
+                          <p className="text-sm text-green-600">
+                            Expiry:{" "}
+                            <span className="capitalize">
+                              {getActualExpiryDate()}
+                            </span>
+                          </p>
+                        )}
+                    </div>
                   )}
                 </div>
               </div>
+
               <div className="flex space-x-3">
                 {isSubscribedUser && (
                   <button
@@ -408,9 +512,19 @@ const BillingPage = () => {
                     Cancel Subscription
                   </button>
                 )}
-                <button className="px-6 py-2 text-sm font-medium text-blue-600 bg-white border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors duration-200">
-                  Update Payment Method
-                </button>
+                {isSubscribedUser && (
+                  <button className="px-6 py-2 text-sm font-medium text-blue-600 bg-white border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors duration-200">
+                    Update Payment Method
+                  </button>
+                )}
+                {(isCancelledUser || isExpiredUser) && (
+                  <button
+                    onClick={handleResubscribe}
+                    className="px-6 py-2 text-sm font-medium text-green-600 bg-white border border-green-300 rounded-lg hover:bg-green-50 transition-colors duration-200"
+                  >
+                    Resubscribe
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -509,7 +623,13 @@ const BillingPage = () => {
                 </div>
                 {user?.plan === "paid" && (
                   <span className="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-white bg-opacity-20 text-white border border-white border-opacity-30">
-                    Current Plan
+                    {isSubscribedUser
+                      ? "Active Subscription"
+                      : isExpiredUser
+                      ? "Expired"
+                      : isCancelledUser
+                      ? "Cancelled"
+                      : "Plan Active"}
                   </span>
                 )}
                 <div className="bg-yellow-400 text-yellow-800 px-3 py-1 rounded-full text-sm font-semibold">
@@ -636,7 +756,13 @@ const BillingPage = () => {
                   disabled
                   className="w-full bg-white bg-opacity-20 text-white px-6 py-4 rounded-xl font-semibold cursor-not-allowed border border-white border-opacity-30"
                 >
-                  {isSubscribedUser ? "Active Subscription" : "Plan Active"}
+                  {isSubscribedUser
+                    ? "Active Subscription"
+                    : isExpiredUser
+                    ? "Subscription Expired"
+                    : isCancelledUser
+                    ? "Subscription Cancelled"
+                    : "Plan Active (One-Time)"}
                 </button>
               )}
             </div>
@@ -697,8 +823,8 @@ const BillingPage = () => {
               Cancel Subscription?
             </h3>
             <p className="text-gray-600 mb-4">
-              Your subscription will remain active until {getNextBillingDate()}.
-              You'll lose access to Professional features after that date.
+              Your subscription will remain active until {getActualExpiryDate()}
+              . You'll lose access to Professional features after that date.
             </p>
             <p className="text-sm text-gray-500 mb-6">
               You can resubscribe anytime if you change your mind.
