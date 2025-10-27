@@ -245,9 +245,11 @@ export const verifySubscription = async (req, res) => {
 };
 // NEW: CANCEL SUBSCRIPTION
 // FIXED: CANCEL SUBSCRIPTION - SET EXPIRY DATE
+// billing.controllers.js - COMPLETE FIXED VERSION
 export const cancelSubscription = async (req, res) => {
+  let user = req.user; // Define user at function scope
+
   try {
-    const user = req.user;
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
@@ -262,7 +264,6 @@ export const cancelSubscription = async (req, res) => {
     const subscription = await razorpay.subscriptions.fetch(
       user.subscriptionId
     );
-
     console.log("Current subscription status:", subscription.status);
 
     // If already cancelled, just update our database
@@ -270,7 +271,6 @@ export const cancelSubscription = async (req, res) => {
       console.log("Subscription already cancelled in Razorpay");
 
       user.subscriptionStatus = "cancelled";
-      // Set expiry date to current period end
       user.subscriptionExpiresAt = new Date(subscription.current_end * 1000);
       await user.save();
 
@@ -290,7 +290,7 @@ export const cancelSubscription = async (req, res) => {
       user.subscriptionId
     );
 
-    // Update user - set expiry date but don't downgrade immediately
+    // Update user
     user.subscriptionStatus = "cancelled";
     user.subscriptionExpiresAt = new Date(
       cancelledSubscription.current_end * 1000
@@ -311,22 +311,24 @@ export const cancelSubscription = async (req, res) => {
   } catch (error) {
     console.error("Subscription cancellation error:", error);
 
-    // If it's already cancelled error, handle gracefully
+    // FIXED: user is now accessible in catch block
     if (error.statusCode === 400 && error.error?.code === "BAD_REQUEST_ERROR") {
-      user.subscriptionStatus = "cancelled";
-      user.subscriptionExpiresAt = new Date(); // Set to now as fallback
-      await user.save();
+      if (user) {
+        user.subscriptionStatus = "cancelled";
+        user.subscriptionExpiresAt = new Date();
+        await user.save();
 
-      return res.json({
-        success: true,
-        message: "Subscription was already cancelled. Status updated.",
-        subscriptionStatus: "cancelled",
-      });
+        return res.json({
+          success: true,
+          message: "Subscription was already cancelled. Status updated.",
+          subscriptionStatus: "cancelled",
+        });
+      }
     }
 
-    res
-      .status(500)
-      .json({ error: "Failed to cancel subscription: " + error.message });
+    res.status(500).json({
+      error: "Failed to cancel subscription: " + error.message,
+    });
   }
 };
 
