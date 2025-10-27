@@ -1,8 +1,20 @@
 // src/pages/BillingPage.tsx
 import { useAuth } from "../utils/AuthContext";
 import { PLANS } from "../utils/plans";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import axiosInstance from "../axios/axiosInstance";
+
+// Add this helper function for type-safe error handling
+const isAxiosError = (
+  error: unknown
+): error is {
+  response?: {
+    status?: number;
+    data?: { error?: string };
+  };
+} => {
+  return typeof error === "object" && error !== null && "response" in error;
+};
 
 // Interfaces
 interface RazorpayResponse {
@@ -83,9 +95,8 @@ const BillingPage = () => {
     "subscription"
   );
 
-  // Load user data only once
-
-  const loadRazorpayScript = (): Promise<boolean> => {
+  // Load Razorpay script
+  const loadRazorpayScript = useCallback((): Promise<boolean> => {
     return new Promise((resolve) => {
       if (window.Razorpay) {
         resolve(true);
@@ -98,10 +109,10 @@ const BillingPage = () => {
       script.onerror = () => resolve(false);
       document.body.appendChild(script);
     });
-  };
+  }, []);
 
-  // One-time payment logic
-  const handleUpgrade = async (): Promise<void> => {
+  // Clear Razorpay localStorage
+  const clearRazorpayCache = useCallback(() => {
     if (typeof window !== "undefined") {
       Object.keys(localStorage).forEach((key) => {
         if (key.includes("razorpay") || key.includes("rzp")) {
@@ -109,6 +120,25 @@ const BillingPage = () => {
         }
       });
     }
+  }, []);
+
+  // Get user phone number
+  const getUserPhoneNumber = useCallback((): string => {
+    if (!user) return "";
+    const userWithPhone = user as UserWithPhone;
+    return (
+      userWithPhone?.phoneNumber ||
+      userWithPhone?.phone ||
+      userWithPhone?.mobile ||
+      userWithPhone?.contact ||
+      ""
+    );
+  }, [user]);
+
+  // One-time payment logic
+  const handleUpgrade = async (): Promise<void> => {
+    clearRazorpayCache();
+
     try {
       setLoading(true);
 
@@ -122,18 +152,6 @@ const BillingPage = () => {
         "/billing/create-order"
       );
       const { id, amount, currency, key } = orderResponse.data;
-
-      const getUserPhoneNumber = (): string => {
-        if (!user) return "";
-        const userWithPhone = user as UserWithPhone;
-        return (
-          userWithPhone?.phoneNumber ||
-          userWithPhone?.phone ||
-          userWithPhone?.mobile ||
-          userWithPhone?.contact ||
-          ""
-        );
-      };
 
       const options: RazorpayOptions = {
         key: key,
@@ -187,13 +205,8 @@ const BillingPage = () => {
 
   // Subscription payment logic
   const handleSubscription = async (): Promise<void> => {
-    if (typeof window !== "undefined") {
-      Object.keys(localStorage).forEach((key) => {
-        if (key.includes("razorpay") || key.includes("rzp")) {
-          localStorage.removeItem(key);
-        }
-      });
-    }
+    clearRazorpayCache();
+
     try {
       setSubscriptionLoading(true);
 
@@ -208,18 +221,6 @@ const BillingPage = () => {
           "/billing/create-subscription"
         );
       const { id, amount, currency, key } = subscriptionResponse.data;
-
-      const getUserPhoneNumber = (): string => {
-        if (!user) return "";
-        const userWithPhone = user as UserWithPhone;
-        return (
-          userWithPhone?.phoneNumber ||
-          userWithPhone?.phone ||
-          userWithPhone?.mobile ||
-          userWithPhone?.contact ||
-          ""
-        );
-      };
 
       const options: RazorpayOptions = {
         key: key,
@@ -275,6 +276,56 @@ const BillingPage = () => {
     }
   };
 
+  // Resume subscription (Netflix-style)
+  const handleResumeSubscription = async (): Promise<void> => {
+    try {
+      setSubscriptionLoading(true);
+
+      const confirmResume = window.confirm(
+        "Resuming your subscription will restore automatic monthly billing starting from your original billing date. Continue?"
+      );
+
+      if (!confirmResume) return;
+
+      // Try to resume existing subscription
+      const response = await axiosInstance.post("/billing/resume-subscription");
+
+      if (response.data.success) {
+        alert(
+          "Subscription resumed successfully! Your billing cycle remains unchanged."
+        );
+        await refreshUser();
+      } else {
+        // If resume fails, create new subscription
+        await handleSubscription();
+      }
+    } catch (error: unknown) {
+      console.error("Resume subscription failed:", error);
+
+      // Type-safe error handling
+      if (isAxiosError(error)) {
+        // If resume endpoint doesn't exist, fall back to regular subscription
+        if (error.response?.status === 404) {
+          await handleSubscription();
+        } else {
+          alert(
+            error.response?.data?.error ||
+              "Failed to resume subscription. Please try again."
+          );
+        }
+      } else if (error instanceof Error) {
+        alert(
+          error.message || "Failed to resume subscription. Please try again."
+        );
+      } else {
+        alert("Failed to resume subscription. Please try again.");
+      }
+    } finally {
+      setSubscriptionLoading(false);
+    }
+  };
+
+  // Manual verification
   const handleManualVerify = async (): Promise<void> => {
     try {
       await refreshUser();
@@ -291,6 +342,143 @@ const BillingPage = () => {
     }
   };
 
+  // Fix subscription status
+  const handleFixSubscription = async (): Promise<void> => {
+    try {
+      const confirmFix = window.confirm(
+        "This will fix your subscription status and allow you to resume or create a new subscription. Continue?"
+      );
+
+      if (!confirmFix) return;
+
+      const response = await axiosInstance.post(
+        "/billing/fix-subscription-status"
+      );
+
+      if (response.data.success) {
+        alert(
+          response.data.message || "Subscription status fixed successfully!"
+        );
+        await refreshUser();
+      } else {
+        alert("Failed to fix subscription status: " + response.data.error);
+      }
+    } catch (error) {
+      console.error("Fix subscription failed:", error);
+      alert("Failed to fix subscription status. Please contact support.");
+    }
+  };
+
+  // Sync subscription status
+  const handleSyncStatus = async (): Promise<void> => {
+    try {
+      setSubscriptionLoading(true);
+
+      const response = await axiosInstance.post(
+        "/billing/sync-subscription-status"
+      );
+
+      if (response.data.success) {
+        alert(
+          `Status synced successfully!\nPrevious: ${response.data.previousStatus}\nNew: ${response.data.newStatus}`
+        );
+        await refreshUser();
+      } else {
+        alert("Failed to sync status: " + response.data.error);
+      }
+    } catch (error) {
+      console.error("Sync status failed:", error);
+      alert("Failed to sync subscription status. Please try again.");
+    } finally {
+      setSubscriptionLoading(false);
+    }
+  };
+
+  // Force new subscription
+  const handleForceNewSubscription = async (): Promise<void> => {
+    try {
+      setSubscriptionLoading(true);
+
+      const confirmForce = window.confirm(
+        "This will clear your current cancelled subscription and create a brand new one. Continue?"
+      );
+
+      if (!confirmForce) return;
+
+      const response = await axiosInstance.post(
+        "/billing/force-new-subscription"
+      );
+
+      if (response.data.success) {
+        // Now open the Razorpay modal with the new subscription
+        const scriptLoaded = await loadRazorpayScript();
+        if (!scriptLoaded) {
+          alert("Razorpay SDK failed to load. Please check your connection.");
+          return;
+        }
+
+        const { id, amount, currency, key } = response.data;
+
+        const options: RazorpayOptions = {
+          key: key,
+          amount: amount,
+          currency: currency,
+          name: "Stoq",
+          description: "Professional Plan - Monthly Subscription",
+          subscription_id: id,
+          handler: async function (response: RazorpayResponse) {
+            try {
+              console.log(
+                "New subscription payment successful, verifying...",
+                response
+              );
+
+              await axiosInstance.post("/billing/verify-subscription", {
+                razorpay_subscription_id: response.razorpay_subscription_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+              });
+
+              alert(
+                "New subscription activated! You'll be automatically billed monthly."
+              );
+              await refreshUser();
+            } catch (error) {
+              console.error("New subscription verification failed:", error);
+              alert(
+                "New subscription verification failed. Please contact support."
+              );
+            }
+          },
+          prefill: {
+            name: user?.name || "",
+            email: user?.email || "",
+            contact: getUserPhoneNumber(),
+          },
+          theme: {
+            color: "#10B981",
+          },
+          modal: {
+            ondismiss: function () {
+              setSubscriptionLoading(false);
+              console.log("Subscription modal closed");
+            },
+          },
+        };
+
+        const razorpay = new window.Razorpay(options);
+        razorpay.open();
+      } else {
+        alert("Failed to create new subscription: " + response.data.error);
+      }
+    } catch (error) {
+      console.error("Force new subscription failed:", error);
+      alert("Failed to create new subscription. Please try again.");
+    } finally {
+      setSubscriptionLoading(false);
+    }
+  };
+
+  // Cancel subscription
   const handleCancelSubscription = async (): Promise<void> => {
     try {
       setCancelling(true);
@@ -307,25 +495,49 @@ const BillingPage = () => {
       }
     } catch (error: unknown) {
       console.error("Cancellation failed:", error);
-      let errorMessage = "Failed to cancel subscription. Please try again.";
-      if (error instanceof Error) {
-        errorMessage += ` Error: ${error.message}`;
+
+      // Type-safe error handling
+      if (isAxiosError(error)) {
+        if (error.response?.status === 400) {
+          const errorMessage =
+            error.response.data?.error ||
+            "Subscription is still activating. Please wait 1-2 minutes.";
+          alert(`⚠️ ${errorMessage}`);
+        } else {
+          alert(
+            error.response?.data?.error ||
+              "Failed to cancel subscription. Please try again."
+          );
+        }
+      } else if (error instanceof Error) {
+        alert(
+          error.message || "Failed to cancel subscription. Please try again."
+        );
+      } else {
+        alert("Failed to cancel subscription. Please try again.");
       }
-      alert(errorMessage);
     } finally {
       setCancelling(false);
     }
   };
 
-  const handleResubscribe = async (): Promise<void> => {
+  // Start new subscription
+  const handleNewSubscription = async (): Promise<void> => {
     try {
+      const confirmNew = window.confirm(
+        "This will start a NEW subscription with today as your billing date. Continue?"
+      );
+
+      if (!confirmNew) return;
+
       await handleSubscription();
     } catch (error) {
-      console.error("Resubscribe failed:", error);
-      alert("Failed to resubscribe. Please try again.");
+      console.error("New subscription failed:", error);
+      alert("Failed to start new subscription. Please try again.");
     }
   };
 
+  // Helper functions
   const getNextBillingDate = (): string => {
     const today = new Date();
     const nextMonth = new Date(today.setMonth(today.getMonth() + 1));
@@ -345,7 +557,7 @@ const BillingPage = () => {
       });
     }
 
-    // Fallback to calculated date (one month from now)
+    // Fallback to calculated date
     const today = new Date();
     const nextMonth = new Date(today.setMonth(today.getMonth() + 1));
     return nextMonth.toLocaleDateString("en-US", {
@@ -390,21 +602,47 @@ const BillingPage = () => {
     return "✓";
   };
 
-  // Fixed subscription detection logic
+  // 🎯 ENHANCED STATUS DETECTION - ERROR FREE
   const isSubscribedUser = Boolean(
     user?.subscriptionId &&
       user?.subscriptionStatus &&
-      user.subscriptionStatus !== "cancelled" &&
-      user.subscriptionStatus !== "expired" &&
-      user.subscriptionStatus !== "completed"
+      ["active", "cancelled_at_period_end", "pending", "past_due"].includes(
+        user.subscriptionStatus
+      )
   );
 
   const isOneTimeUser = user?.plan === "paid" && !user?.subscriptionId;
-  console.log(isOneTimeUser);
-  const isCancelledUser =
+
+  const canResumeSubscription =
+    user?.subscriptionId &&
+    ["cancelled_at_period_end", "cancelled"].includes(
+      user.subscriptionStatus || ""
+    );
+
+  const isFullyCancelledUser =
+    user?.subscriptionId &&
+    ["cancelled", "expired", "completed"].includes(
+      user.subscriptionStatus || ""
+    );
+
+  const isScheduledCancellation =
+    user?.subscriptionId &&
+    user?.subscriptionStatus === "cancelled_at_period_end";
+
+  const needsPaymentAttention =
+    user?.subscriptionId && user?.subscriptionStatus === "past_due";
+  console.log(needsPaymentAttention);
+  const needsStatusFix =
     user?.subscriptionId && user?.subscriptionStatus === "cancelled";
-  const isExpiredUser =
-    user?.subscriptionId && user?.subscriptionStatus === "expired";
+
+  const needsStatusSync =
+    user?.subscriptionId && user?.subscriptionStatus === "active";
+
+  const canForceNewSubscription =
+    user?.subscriptionId &&
+    ["cancelled", "cancelled_at_period_end", "expired"].includes(
+      user.subscriptionStatus || ""
+    );
 
   // Show loading state while auth is loading
   if (authLoading) {
@@ -441,38 +679,49 @@ const BillingPage = () => {
               <div className="flex items-center space-x-4 mb-4 md:mb-0">
                 <div className="flex items-center justify-center w-12 h-12 bg-green-100 rounded-full">
                   <span className="text-2xl">
-                    {isCancelledUser || isExpiredUser ? "❌" : "🎉"}
+                    {isFullyCancelledUser ? "⏸️" : "🎉"}
                   </span>
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-green-800">
-                    {isSubscribedUser
+                    {isSubscribedUser && !isScheduledCancellation
                       ? "Active Professional Subscription"
-                      : isExpiredUser
+                      : isScheduledCancellation
+                      ? "Subscription Active (Cancels at period end)"
+                      : isFullyCancelledUser &&
+                        user?.subscriptionStatus === "expired"
                       ? "Expired Professional Subscription"
-                      : isCancelledUser
+                      : isFullyCancelledUser
                       ? "Cancelled Professional Subscription"
-                      : "Active Professional Plan (One-Time)"}
+                      : isOneTimeUser
+                      ? "Active Professional Plan (One-Time)"
+                      : "Subscription Status"}
                   </h3>
                   <p className="text-green-600">
-                    {isSubscribedUser ? (
+                    {isSubscribedUser && !isScheduledCancellation ? (
                       <>
                         Next billing date:{" "}
                         <strong>{getNextBillingDate()}</strong>
                       </>
-                    ) : isCancelledUser ? (
+                    ) : isScheduledCancellation ? (
                       <>
-                        Access until: <strong>{getActualExpiryDate()}</strong>
+                        Access until: <strong>{getActualExpiryDate()}</strong> •{" "}
+                        <span className="text-yellow-600 ml-1">
+                          You can resume anytime
+                        </span>
                       </>
-                    ) : isExpiredUser ? (
+                    ) : isFullyCancelledUser ? (
                       <>
-                        Subscription expired on:{" "}
+                        Subscription fully cancelled on:{" "}
                         <strong>{getActualExpiryDate()}</strong>
                       </>
-                    ) : (
+                    ) : isOneTimeUser ? (
                       <>One-time payment - Lifetime access</>
+                    ) : (
+                      <>Subscription status unknown</>
                     )}
                   </p>
+
                   {user.subscriptionId && (
                     <div className="mt-2 space-y-1">
                       <p className="text-sm text-green-600">
@@ -482,26 +731,38 @@ const BillingPage = () => {
                         <p className="text-sm text-green-600">
                           Status:{" "}
                           <span className="capitalize">
-                            {user.subscriptionStatus}
+                            {user.subscriptionStatus.replace(/_/g, " ")}
+                          </span>
+                          {isScheduledCancellation && (
+                            <span className="text-yellow-600 ml-1">
+                              (Resumable)
+                            </span>
+                          )}
+                          {needsStatusFix && (
+                            <span className="text-red-600 ml-1">
+                              (Needs Fix)
+                            </span>
+                          )}
+                        </p>
+                      )}
+                      {user.subscriptionExpiresAt && (
+                        <p className="text-sm text-green-600">
+                          {isScheduledCancellation
+                            ? "Scheduled end:"
+                            : "Expiry:"}{" "}
+                          <span className="capitalize">
+                            {getActualExpiryDate()}
                           </span>
                         </p>
                       )}
-                      {user.subscriptionExpiresAt &&
-                        (isCancelledUser || isExpiredUser) && (
-                          <p className="text-sm text-green-600">
-                            Expiry:{" "}
-                            <span className="capitalize">
-                              {getActualExpiryDate()}
-                            </span>
-                          </p>
-                        )}
                     </div>
                   )}
                 </div>
               </div>
 
-              <div className="flex space-x-3">
-                {isSubscribedUser && (
+              <div className="flex space-x-3 flex-wrap gap-2">
+                {/* Active subscription - can cancel */}
+                {isSubscribedUser && !isScheduledCancellation && (
                   <button
                     onClick={() => setShowCancelConfirm(true)}
                     className="px-6 py-2 text-sm font-medium text-red-600 bg-white border border-red-300 rounded-lg hover:bg-red-50 transition-colors duration-200"
@@ -509,17 +770,71 @@ const BillingPage = () => {
                     Cancel Subscription
                   </button>
                 )}
+
+                {/* Scheduled cancellation - can resume */}
+                {canResumeSubscription && (
+                  <button
+                    onClick={handleResumeSubscription}
+                    disabled={subscriptionLoading}
+                    className="px-6 py-2 text-sm font-medium text-green-600 bg-white border border-green-300 rounded-lg hover:bg-green-50 transition-colors duration-200 disabled:opacity-50"
+                  >
+                    {subscriptionLoading
+                      ? "Resuming..."
+                      : "Resume Subscription"}
+                  </button>
+                )}
+
+                {/* Fully cancelled or expired - need new subscription */}
+                {isFullyCancelledUser && (
+                  <button
+                    onClick={handleNewSubscription}
+                    disabled={subscriptionLoading}
+                    className="px-6 py-2 text-sm font-medium text-blue-600 bg-white border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors duration-200 disabled:opacity-50"
+                  >
+                    {subscriptionLoading
+                      ? "Starting..."
+                      : "Start New Subscription"}
+                  </button>
+                )}
+
+                {/* Status fix button */}
+                {needsStatusFix && (
+                  <button
+                    onClick={handleFixSubscription}
+                    className="px-6 py-2 text-sm font-medium text-orange-600 bg-white border border-orange-300 rounded-lg hover:bg-orange-50 transition-colors duration-200"
+                  >
+                    Fix Subscription Status
+                  </button>
+                )}
+
+                {/* Status sync button */}
+                {needsStatusSync && (
+                  <button
+                    onClick={handleSyncStatus}
+                    disabled={subscriptionLoading}
+                    className="px-6 py-2 text-sm font-medium text-purple-600 bg-white border border-purple-300 rounded-lg hover:bg-purple-50 transition-colors duration-200 disabled:opacity-50"
+                  >
+                    {subscriptionLoading ? "Syncing..." : "Sync Status"}
+                  </button>
+                )}
+
+                {/* Force new subscription button */}
+                {canForceNewSubscription && (
+                  <button
+                    onClick={handleForceNewSubscription}
+                    disabled={subscriptionLoading}
+                    className="px-6 py-2 text-sm font-medium text-indigo-600 bg-white border border-indigo-300 rounded-lg hover:bg-indigo-50 transition-colors duration-200 disabled:opacity-50"
+                  >
+                    {subscriptionLoading
+                      ? "Creating..."
+                      : "Create New Subscription"}
+                  </button>
+                )}
+
+                {/* Update payment method (for active subscriptions) */}
                 {isSubscribedUser && (
                   <button className="px-6 py-2 text-sm font-medium text-blue-600 bg-white border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors duration-200">
                     Update Payment Method
-                  </button>
-                )}
-                {(isCancelledUser || isExpiredUser) && (
-                  <button
-                    onClick={handleResubscribe}
-                    className="px-6 py-2 text-sm font-medium text-green-600 bg-white border border-green-300 rounded-lg hover:bg-green-50 transition-colors duration-200"
-                  >
-                    Resubscribe
                   </button>
                 )}
               </div>
@@ -622,9 +937,10 @@ const BillingPage = () => {
                   <span className="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-white bg-opacity-20 text-white border border-white border-opacity-30">
                     {isSubscribedUser
                       ? "Active Subscription"
-                      : isExpiredUser
+                      : isFullyCancelledUser &&
+                        user?.subscriptionStatus === "expired"
                       ? "Expired"
-                      : isCancelledUser
+                      : isFullyCancelledUser
                       ? "Cancelled"
                       : "Plan Active"}
                   </span>
@@ -755,58 +1071,14 @@ const BillingPage = () => {
                 >
                   {isSubscribedUser
                     ? "Active Subscription"
-                    : isExpiredUser
+                    : isFullyCancelledUser &&
+                      user?.subscriptionStatus === "expired"
                     ? "Subscription Expired"
-                    : isCancelledUser
+                    : isFullyCancelledUser
                     ? "Subscription Cancelled"
                     : "Plan Active (One-Time)"}
                 </button>
               )}
-            </div>
-          </div>
-        </div>
-
-        {/* FAQ Section */}
-        <div className="max-w-4xl mx-auto mt-16">
-          <h2 className="text-2xl font-bold text-center text-gray-900 mb-8">
-            Frequently Asked Questions
-          </h2>
-          <div className="grid md:grid-cols-2 gap-8">
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-              <h3 className="font-semibold text-gray-900 mb-2">
-                What's the difference between one-time and subscription?
-              </h3>
-              <p className="text-gray-600">
-                One-time payment gives you lifetime access. Subscription bills
-                monthly but can be cancelled anytime.
-              </p>
-            </div>
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-              <h3 className="font-semibold text-gray-900 mb-2">
-                Can I switch between payment types?
-              </h3>
-              <p className="text-gray-600">
-                Yes, you can choose either option. One-time for permanent
-                access, subscription for flexible monthly billing.
-              </p>
-            </div>
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-              <h3 className="font-semibold text-gray-900 mb-2">
-                Is there a contract for subscriptions?
-              </h3>
-              <p className="text-gray-600">
-                No contracts. All subscriptions are month-to-month and you can
-                cancel anytime.
-              </p>
-            </div>
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-              <h3 className="font-semibold text-gray-900 mb-2">
-                Do you offer refunds?
-              </h3>
-              <p className="text-gray-600">
-                We offer a 14-day money-back guarantee for all new subscriptions
-                and one-time payments.
-              </p>
             </div>
           </div>
         </div>

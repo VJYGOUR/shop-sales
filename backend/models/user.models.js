@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
+
 const userSchema = new mongoose.Schema(
   {
     name: { type: String, required: [true, "Name is required"] },
@@ -35,12 +36,15 @@ const userSchema = new mongoose.Schema(
       type: String,
       enum: [
         "active",
-        "cancelled",
+        "cancelled", // Keep for backward compatibility
+        "cancelled_at_period_end",
         "pending",
         "expired",
         "completed",
         "one_time",
         "created",
+        "past_due", // NEW: For failed payments
+        "paused",
       ],
       default: null,
     },
@@ -51,7 +55,7 @@ const userSchema = new mongoose.Schema(
     businessName: {
       type: String,
       default: function () {
-        return this.name + "'s Business"; // Auto-generate from name
+        return this.name + "'s Business";
       },
     },
     phoneNumber: {
@@ -68,25 +72,25 @@ const userSchema = new mongoose.Schema(
       },
     ],
     role: { type: String, enum: ["customer", "admin"], default: "customer" },
-    // Add these new fields for email verification
     isEmailVerified: { type: Boolean, default: false },
     emailVerificationToken: String,
     emailVerificationExpires: Date,
   },
-
   { timestamps: true }
 );
 
-//PREHOOK FOR PASSWORD HAHING BEFORE STORING IN DB
+// PREHOOK FOR PASSWORD HASHING BEFORE STORING IN DB
 userSchema.pre("save", async function (next) {
   if (this.isModified("password")) {
     this.password = await bcrypt.hash(this.password, 12);
   }
   next();
 });
-//add CHECKPASSWORD METHOD ON USERSCHEMA -> this will add checkpassword on each document
+
+// ADD CHECKPASSWORD METHOD ON USERSCHEMA
 userSchema.methods.checkPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
+
 const User = mongoose.models.User || mongoose.model("User", userSchema);
 export default User;

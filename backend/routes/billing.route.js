@@ -9,6 +9,9 @@ import {
   getSubscriptionDetails,
   handleWebhook,
   testRazorpayConnection,
+  resumeSubscription,
+  forceNewSubscription,
+  syncSubscriptionStatus,
 } from "../controllers/billing.controllers.js";
 import { protect } from "../middleware/auth.js";
 
@@ -28,5 +31,10 @@ router.get("/subscription-details", protect, getSubscriptionDetails);
 router.post("/webhook-v2", handleWebhook);
 // In routes/billing.js
 router.get("/test-razorpay", protect, testRazorpayConnection);
+// Add these routes to your billing routes
+router.post("/resume-subscription", protect, resumeSubscription);
+// Add to your billing routes
+router.post("/sync-subscription-status", protect, syncSubscriptionStatus);
+router.post("/force-new-subscription", protect, forceNewSubscription);
 
 export default router;
