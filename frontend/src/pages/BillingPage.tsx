@@ -1,7 +1,7 @@
 // src/pages/BillingPage.tsx
 import { useAuth } from "../utils/AuthContext";
 import { PLANS } from "../utils/plans";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import axiosInstance from "../axios/axiosInstance";
 
 // Interfaces
@@ -84,9 +84,6 @@ const BillingPage = () => {
   );
 
   // Load user data only once
-  useEffect(() => {
-    refreshUser();
-  }, []);
 
   const loadRazorpayScript = (): Promise<boolean> => {
     return new Promise((resolve) => {
