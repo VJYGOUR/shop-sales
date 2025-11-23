@@ -2,23 +2,21 @@ FROM node:20
 
 WORKDIR /app
 
-# 1️⃣ Copy package.json files first for caching
+# 1️⃣ Copy package.json files for caching
 COPY backend/package*.json ./backend/
 COPY frontend/package*.json ./frontend/
 
-# 2️⃣ Copy all frontend source files (needed for tsc -b)
+# 2️⃣ Install frontend dependencies and build
 COPY frontend ./frontend
-
-# 3️⃣ Build frontend
 RUN cd frontend && npm install && npm run build
 
-# 4️⃣ Copy backend source files
+# 3️⃣ Install backend dependencies
 COPY backend ./backend
-
-# 5️⃣ Install backend dependencies
 RUN cd backend && npm install
 
+# 4️⃣ Set backend as working directory
 WORKDIR /app/backend
 EXPOSE 5000
 
+# 5️⃣ Start backend
 CMD ["node", "app.js"]
