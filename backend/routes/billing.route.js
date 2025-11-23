@@ -9,9 +9,13 @@ import {
   getSubscriptionDetails,
   handleWebhook,
   testRazorpayConnection,
-  resumeSubscription,
-  forceNewSubscription,
-  syncSubscriptionStatus,
+  createNewSubscription,
+  cleanupStuckSubscription,
+  debugUserSubscription,
+  debugSubscriptionAssignment,
+  fixUserSubscription,
+  nuclearResetSubscription,
+  syncSubscription, // ADD THIS
 } from "../controllers/billing.controllers.js";
 import { protect } from "../middleware/auth.js";
 
@@ -27,14 +31,23 @@ router.post("/verify-subscription", protect, verifySubscription);
 router.post("/cancel-subscription", protect, cancelSubscription);
 router.get("/subscription-details", protect, getSubscriptionDetails);
 
+// ADD NEW ROUTE FOR CREATING SUBSCRIPTION AFTER EXPIRY
+router.post("/create-new-subscription", protect, createNewSubscription); // ADD THIS LINE
+
 // Webhook doesn't need protect middleware since it's called by Razorpay
-router.post("/webhook-v2", handleWebhook);
-// In routes/billing.js
+router.post("/webhook-v2", handleWebhook); // Add cleanup route
+router.post("/cleanup-stuck-subscription", protect, cleanupStuckSubscription);
+
+// Test route
 router.get("/test-razorpay", protect, testRazorpayConnection);
-// Add these routes to your billing routes
-router.post("/resume-subscription", protect, resumeSubscription);
-// Add to your billing routes
-router.post("/sync-subscription-status", protect, syncSubscriptionStatus);
-router.post("/force-new-subscription", protect, forceNewSubscription);
+router.get("/debug-subscriptions", protect, debugUserSubscription);
+router.get(
+  "/debug-subscription-assignment",
+  protect,
+  debugSubscriptionAssignment
+);
+router.post("/fix-subscription", protect, fixUserSubscription);
+router.post("/nuclear-reset", protect, nuclearResetSubscription);
+router.get("/sync-subscription", protect, syncSubscription);
 
 export default router;
