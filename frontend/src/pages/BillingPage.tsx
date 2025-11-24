@@ -70,17 +70,17 @@ const priceData: PriceData[] = [
 ];
 
 const Pricing = () => {
-  const INR_TO_USD = 90; // 1 USD = 83 INR
+  const INR_TO_USD = 90; // 1 USD = 90 INR
 
   const [isMonthly, setIsMonthly] = useState(false);
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [loading, setLoading] = useState(false);
 
+  // Subscribe to a plan
   const handleSubscribe = async (tier: string) => {
     if (!user) return alert("Please login first");
 
     setLoading(true);
-
     try {
       const planType: "monthly" | "annual" = isMonthly ? "monthly" : "annual";
 
@@ -107,6 +107,7 @@ const Pricing = () => {
         handler: async (response: RazorpayPaymentResponse) => {
           await axios.post("/subscriptions/verify", response);
           alert("Subscription successful!");
+          await refreshUser();
         },
       };
 
@@ -123,16 +124,37 @@ const Pricing = () => {
     }
   };
 
+  // Cancel the current subscription
+  const handleCancelSubscription = async () => {
+    if (!user || !user.subscriptionId) return alert("No active subscription");
+
+    setLoading(true);
+    try {
+      await axios.post("/billing/cancel-subscription", {
+        subscriptionId: user.subscriptionId,
+      });
+      alert("Subscription cancelled successfully!");
+      await refreshUser();
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        alert("Failed to cancel subscription: " + error.message);
+      } else {
+        alert("Failed to cancel subscription");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="flex">
-      {/* Sidebar */}
-
       {/* Main Content */}
       <div className="flex-1 p-8">
         <h1 className="text-center my-8 text-3xl text-midnight font-mont font-bold text-gray-500">
           Our Pricing {user?.name}
         </h1>
 
+        {/* Toggle Monthly / Annually */}
         <div className="flex items-center font-mont gap-4 justify-center mt-10">
           <span>Annually</span>
           <label className="relative inline-flex items-center cursor-pointer">
@@ -157,14 +179,14 @@ const Pricing = () => {
               <div
                 key={i}
                 className={`
-        flex flex-col gap-6 divide-y divide-gray-300 
-        items-center justify-center pt-8 pb-12 w-full max-w-sm rounded-xl
-        ${
-          isMiddle
-            ? "text-white bg-gradient-to-r from-blue-500 to-blue-700 shadow-lg scale-105 transform transition-all"
-            : "bg-gray-100 text-gray-400 border border-gray-300 opacity-50 cursor-not-allowed"
-        }
-      `}
+                  flex flex-col gap-6 divide-y divide-gray-300 
+                  items-center justify-center pt-8 pb-12 w-full max-w-sm rounded-xl
+                  ${
+                    isMiddle
+                      ? "text-white bg-gradient-to-r from-blue-500 to-blue-700 shadow-lg scale-105 transform transition-all"
+                      : "bg-gray-100 text-gray-400 border border-gray-300 opacity-50 cursor-not-allowed"
+                  }
+                `}
               >
                 <span className="font-bold">{curr.tier}</span>
 
@@ -183,13 +205,13 @@ const Pricing = () => {
                   disabled={!isMiddle || loading} // Disable side buttons
                   onClick={() => handleSubscribe(curr.tier)}
                   className={`
-          font-bold px-14 rounded-lg py-3 transition
-          ${
-            isMiddle
-              ? "bg-white text-blue-600 hover:bg-gray-100"
-              : "bg-gray-300 text-gray-500 cursor-not-allowed"
-          }
-        `}
+                    font-bold px-14 rounded-lg py-3 transition
+                    ${
+                      isMiddle
+                        ? "bg-white text-blue-600 hover:bg-gray-100"
+                        : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                    }
+                  `}
                 >
                   {loading && isMiddle
                     ? "Processing..."
@@ -197,6 +219,17 @@ const Pricing = () => {
                     ? "Subscribe"
                     : "Unavailable"}
                 </button>
+
+                {/* Cancel button only on active card if subscription exists */}
+                {isMiddle && user?.subscriptionStatus === "active" && (
+                  <button
+                    onClick={handleCancelSubscription}
+                    disabled={loading}
+                    className="mt-4 px-10 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+                  >
+                    {loading ? "Processing..." : "Cancel Subscription"}
+                  </button>
+                )}
               </div>
             );
           })}
