@@ -41,7 +41,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     setLoading(true);
     try {
       const res = await axiosInstance.get<{ user: User }>("/auth/me");
-      setUser(res.data.user);
+      const fetchedUser = res.data.user;
+
+      // --- Auto-downgrade logic ---
+      if (
+        fetchedUser.subscriptionExpiresAt &&
+        new Date(fetchedUser.subscriptionExpiresAt) < new Date() &&
+        fetchedUser.plan !== "free"
+      ) {
+        fetchedUser.plan = "free";
+        fetchedUser.subscriptionStatus = "expired";
+
+        // Optional: persist downgrade in backend
+      }
+      // ----------------------------
+
+      setUser(fetchedUser);
     } catch (err: unknown) {
       setUser(null);
       handleApiError(err);
