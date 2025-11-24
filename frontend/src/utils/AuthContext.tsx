@@ -69,10 +69,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   useEffect(() => {
     refreshUser();
   }, []); // Empty dependency array
-  useEffect(() => {
-    const interval = setInterval(refreshUser, 60 * 1000); // every 60 seconds
-    return () => clearInterval(interval);
-  }, []);
+  
   // Login
   const login = async (): Promise<void> => {
     await refreshUser();
