@@ -65,7 +65,7 @@ export const verifyPayment = async (req, res) => {
 
     // Update subscription to active
     user.subscriptionStatus = "active";
-
+    user.plan = "professional";
     // Optionally, track payment info
     if (!user.payments) user.payments = [];
     user.payments.push({

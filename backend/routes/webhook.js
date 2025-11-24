@@ -34,7 +34,7 @@ router.post(
           const user = await User.findOne({ subscriptionId });
           if (user) {
             user.subscriptionStatus = "active";
-
+            user.plan = "professional"; // unlock features
             // Set expiration based on subscription type
             const days = user.subscriptionType === "monthly" ? 30 : 365;
             const currentDate = new Date();
