@@ -69,7 +69,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   useEffect(() => {
     refreshUser();
   }, []); // Empty dependency array
-  
+
   // Login
   const login = async (): Promise<void> => {
     await refreshUser();

@@ -105,7 +105,7 @@ const Pricing = () => {
           color: "#3b82f6",
         },
         handler: async (response: RazorpayPaymentResponse) => {
-          await axios.post("/subscriptions/verify", response);
+          await axios.post("/billing/verify", response);
           alert("Subscription successful!");
           await refreshUser();
         },
