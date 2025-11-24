@@ -36,8 +36,8 @@ const Login = () => {
       setIsLoading(true);
 
       try {
-        const response = await axiosInstance.post("/auth/login", data);
-        console.log("response is", response);
+        await axiosInstance.post("/auth/login", data);
+
         setSuccessMessage("Logged in successfully!");
         await login(); // refreshUser will fetch the user info
         navigate("/dashboard");

@@ -24,7 +24,6 @@ const Dashboard: React.FC = () => {
 
   // ADD THIS HOOK
   const { user } = useAuth();
-  console.log(user?.id);
 
   const calculateDailyAndMonthlyStats = (sales: Sale[]) => {
     const now = new Date();
