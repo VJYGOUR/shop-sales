@@ -1,27 +1,30 @@
-// utils/usePlanLimits.ts
 import { useAuth } from "./AuthContext";
-import { PLANS, type FeatureType } from "./plans"; // Add 'type' keyword
+import { PLANS, type FeatureType, type PlanType } from "./plans";
 
 export const usePlanLimits = () => {
   const { user } = useAuth();
 
+  // Validate planKey exists in PLANS safely
+  const planKey: PlanType = (() => {
+    const key = user?.plan as PlanType | undefined;
+    return key && Object.keys(PLANS).includes(key) ? key : "free";
+  })();
+
+  const plan = PLANS[planKey];
+
   const checkProductLimit = (currentCount: number): boolean => {
-    if (!user) return false;
-    const maxProducts = PLANS[user.plan].limits.maxProducts;
-    console.log(maxProducts)
-    return currentCount < maxProducts;
+    return currentCount < plan.limits.maxProducts;
   };
 
   const canUseFeature = (feature: FeatureType): boolean => {
-    if (!user) return false;
-    // Type assertion to fix the 'never' error
-    const features = PLANS[user.plan].limits.features as readonly FeatureType[];
+    // Cast to FeatureType[] so TypeScript understands includes() works
+    const features: FeatureType[] = plan.limits
+      .features as unknown as FeatureType[];
     return features.includes(feature);
   };
 
   const getPlanLimits = () => {
-    if (!user) return PLANS.free.limits;
-    return PLANS[user.plan].limits;
+    return plan.limits;
   };
 
   return { checkProductLimit, canUseFeature, getPlanLimits };

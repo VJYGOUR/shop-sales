@@ -10,7 +10,7 @@ interface User {
   id: string;
   name: string;
   email: string;
-  plan: "free" | "paid";
+  plan: "free" | "professional" | "master";
   businessName: string;
   profileImage?: string;
   avatar?: string;

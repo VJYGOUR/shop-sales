@@ -1,49 +1,35 @@
-// scripts/simpleMigration.js
 import mongoose from "mongoose";
-import dotenv from "dotenv";
+import { configDotenv } from "dotenv";
+import User from "../models/user.models.js";
 
-// Load environment variables
-dotenv.config();
+configDotenv();
 
-const MONGODB_URI = process.env.MONGO_URI;
+const MONGO_URI =
+  process.env.MONGO_URI || "mongodb://localhost:27017/your-db-name";
 
-const simpleMigration = async () => {
+const migratePaidToProfessional = async () => {
   try {
-    console.log("🚀 Starting simple migration...");
-
-    // Connect to MongoDB
-    await mongoose.connect(MONGODB_URI);
+    // 1️⃣ Connect to MongoDB
+    await mongoose.connect(MONGO_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
     console.log("✅ Connected to MongoDB");
 
-    // Import User model
-    const User = (await import("../models/user.models.js")).default;
-
-    // Update all users with 'cancelled' status
+    // 2️⃣ Update users
     const result = await User.updateMany(
-      {
-        subscriptionStatus: "cancelled",
-        subscriptionId: { $ne: null },
-      },
-      {
-        $set: {
-          subscriptionStatus: "cancelled_at_period_end",
-          subscriptionExpiresAt: new Date(
-            Date.now() + 30 * 24 * 60 * 60 * 1000
-          ),
-        },
-      }
+      { plan: "paid" },
+      { plan: "professional" }
     );
-
-    console.log(
-      `🎉 Migration completed! ${result.modifiedCount} users updated.`
-    );
-  } catch (error) {
-    console.error("❌ Migration failed:", error.message);
+    console.log(`🎉 Migration complete: ${result.modifiedCount} users updated`);
+  } catch (err) {
+    console.error("❌ Migration failed:", err);
   } finally {
+    // 3️⃣ Close connection
     await mongoose.connection.close();
     console.log("🔌 Connection closed");
     process.exit(0);
   }
 };
 
-simpleMigration();
+migratePaidToProfessional();

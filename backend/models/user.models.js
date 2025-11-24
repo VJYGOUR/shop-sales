@@ -17,7 +17,10 @@ const userSchema = new mongoose.Schema(
         message: "Invalid email format",
       },
     },
-
+    razorpayCustomerId: {
+      type: String,
+      default: null,
+    },
     password: {
       type: String,
       required: [true, "Password is required"],
@@ -25,13 +28,20 @@ const userSchema = new mongoose.Schema(
     },
     plan: {
       type: String,
-      enum: ["free", "paid"],
+      enum: ["free", "professional", "master"],
       default: "free",
     },
+
     subscriptionId: {
       type: String,
       default: null,
     },
+    subscriptionType: {
+      type: String,
+      enum: ["monthly", "annual"],
+      default: "monthly",
+    },
+
     subscriptionStatus: {
       type: String,
       enum: [
@@ -91,6 +101,27 @@ userSchema.pre("save", async function (next) {
 userSchema.methods.checkPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
+// ADD THESE HELPER METHODS AFTER checkPassword METHOD:
+userSchema.methods.isPaid = function () {
+  return this.subscriptionStatus === "active";
+};
 
+userSchema.methods.isExpired = function () {
+  if (!this.subscriptionExpiresAt) return true;
+  return new Date() > new Date(this.subscriptionExpiresAt);
+};
+
+userSchema.methods.extendSubscription = function (days) {
+  const current = this.subscriptionExpiresAt
+    ? new Date(this.subscriptionExpiresAt)
+    : new Date();
+
+  current.setDate(current.getDate() + days);
+  this.subscriptionExpiresAt = current;
+};
+
+// ADD THESE INDEXES AT THE BOTTOM BEFORE EXPORT:
+userSchema.index({ subscriptionId: 1 });
+userSchema.index({ subscriptionStatus: 1 });
 const User = mongoose.models.User || mongoose.model("User", userSchema);
 export default User;

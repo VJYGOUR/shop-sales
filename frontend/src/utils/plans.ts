@@ -2,7 +2,10 @@
 export const PLANS = {
   free: {
     name: "Free",
-    price: 0,
+    price: {
+      monthly: 0,
+      yearly: 0,
+    },
     limits: {
       maxProducts: 100,
       maxUsers: 1,
@@ -14,9 +17,12 @@ export const PLANS = {
       ] as const,
     },
   },
-  paid: {
+  professional: {
     name: "Professional",
-    price: 29,
+    price: {
+      monthly: 29,
+      yearly: 299, // ~2 months free
+    },
     limits: {
       maxProducts: 10000,
       maxUsers: 5,
@@ -30,9 +36,30 @@ export const PLANS = {
       ] as const,
     },
   },
+  master: {
+    name: "Master",
+    price: {
+      monthly: 49,
+      yearly: 499, // ~2 months free
+    },
+    limits: {
+      maxProducts: 50000,
+      maxUsers: 10,
+      features: [
+        "unlimited_products",
+        "multiple_users",
+        "advanced_analytics",
+        "barcode_system",
+        "custom_reports",
+        "priority_support",
+        "dedicated_account_manager",
+        "priority_onboarding",
+      ] as const,
+    },
+  },
 } as const;
 
-// Create a union type of all possible features
+// Union type of all possible features
 export type FeatureType =
   | "basic_inventory"
   | "sales_tracking"
@@ -43,6 +70,12 @@ export type FeatureType =
   | "advanced_analytics"
   | "barcode_system"
   | "custom_reports"
-  | "priority_support";
+  | "priority_support"
+  | "dedicated_account_manager"
+  | "priority_onboarding";
 
+// Plan keys
 export type PlanType = keyof typeof PLANS;
+
+// Billing period type
+export type BillingPeriod = keyof (typeof PLANS)["free"]["price"]; // "monthly" | "yearly"

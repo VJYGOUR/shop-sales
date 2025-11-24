@@ -69,7 +69,7 @@ const Profile = () => {
                 className={`
                 px-3 py-2 rounded-lg capitalize font-medium
                 ${
-                  user?.plan === "paid"
+                  user?.plan === "professional"
                     ? "bg-green-100 text-green-800"
                     : "bg-blue-100 text-blue-800"
                 }

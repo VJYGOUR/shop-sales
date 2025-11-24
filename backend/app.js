@@ -5,6 +5,7 @@ import productRoutes from "./routes/product.route.js";
 import salesRoutes from "./routes/sales.route.js";
 import billingRoutes from "./routes/billing.route.js";
 import uploadRoutes from "./routes/upload.route.js";
+import webhookRoutes from "./routes/webhook.js";
 import productImageRoutes from "./routes/productImage.route.js";
 import connectDB from "./lib/db.js";
 import cookieParser from "cookie-parser";
@@ -42,7 +43,7 @@ app.use("/api/upload", uploadRoutes);
 
 // Add with your other routes
 app.use("/api/products", productImageRoutes);
-
+app.use("/api/webhook", webhookRoutes);
 // ✅ Serve React build (for production)
 const clientBuildPath = path.join(__dirname, "../frontend/dist");
 app.use(express.static(clientBuildPath));

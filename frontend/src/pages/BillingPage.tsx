@@ -1,1108 +1,209 @@
-// src/pages/BillingPage.tsx
+import { useState } from "react";
 import { useAuth } from "../utils/AuthContext";
-import { PLANS } from "../utils/plans";
-import { useState, useCallback } from "react";
-import axiosInstance from "../axios/axiosInstance";
+import axios from "../axios/axiosInstance";
 
-// Add this helper function for type-safe error handling
-const isAxiosError = (
-  error: unknown
-): error is {
-  response?: {
-    status?: number;
-    data?: { error?: string };
-  };
-} => {
-  return typeof error === "object" && error !== null && "response" in error;
-};
-
-// Interfaces
-interface RazorpayResponse {
-  razorpay_order_id: string;
-  razorpay_payment_id: string;
-  razorpay_signature: string;
-  razorpay_subscription_id?: string;
-}
-
-interface RazorpayOrder {
-  id: string;
-  amount: number;
-  currency: string;
-  key: string;
-}
-
-interface RazorpaySubscription {
-  id: string;
-  plan_id: string;
-  amount: number;
-  currency: string;
-  key: string;
-}
-
-interface RazorpayOptions {
-  key: string;
-  amount: number;
-  currency: string;
-  name: string;
-  description: string;
-  order_id?: string;
-  subscription_id?: string;
-  handler: (response: RazorpayResponse) => void;
-  prefill: {
-    name?: string;
-    email?: string;
-    contact?: string;
-  };
-
-  theme: {
-    color: string;
-  };
-  modal: {
-    ondismiss: () => void;
-  };
-}
-
-interface UserWithPhone {
-  name?: string;
-  email?: string;
-  plan?: string;
-  phoneNumber?: string;
-  phone?: string;
-  mobile?: string;
-  contact?: string;
-  subscriptionId?: string;
-  subscriptionStatus?: string;
-  subscriptionExpiresAt?: string;
+interface PriceData {
+  tier: string;
+  monthly: number;
+  yearly: number;
+  serviceOne: string;
+  serviceTwo: string;
+  serviceThree: string;
 }
 
 declare global {
   interface Window {
-    Razorpay: {
-      new (options: RazorpayOptions): {
-        open: () => void;
-      };
-    };
+    Razorpay: new (options: RazorpayOptions) => RazorpayInstance;
   }
 }
 
-const BillingPage = () => {
-  const { user, refreshUser, loading: authLoading } = useAuth();
-  const [loading, setLoading] = useState<boolean>(false);
-  const [subscriptionLoading, setSubscriptionLoading] =
-    useState<boolean>(false);
-  const [cancelling, setCancelling] = useState<boolean>(false);
-  const [showCancelConfirm, setShowCancelConfirm] = useState<boolean>(false);
-  const [paymentType, setPaymentType] = useState<"one-time" | "subscription">(
-    "subscription"
-  );
+interface RazorpayOptions {
+  key: string;
+  subscription_id: string;
+  name: string;
+  description: string;
+  prefill: {
+    name: string;
+    email: string;
+  };
+  theme: {
+    color: string;
+  };
+  handler: (response: RazorpayPaymentResponse) => void;
+}
 
-  // Load Razorpay script
-  const loadRazorpayScript = useCallback((): Promise<boolean> => {
-    return new Promise((resolve) => {
-      if (window.Razorpay) {
-        resolve(true);
-        return;
-      }
+interface RazorpayInstance {
+  open: () => void;
+}
 
-      const script = document.createElement("script");
-      script.src = "https://checkout.razorpay.com/v1/checkout.js";
-      script.onload = () => resolve(true);
-      script.onerror = () => resolve(false);
-      document.body.appendChild(script);
-    });
-  }, []);
+interface RazorpayPaymentResponse {
+  razorpay_payment_id: string;
+  razorpay_subscription_id: string;
+  razorpay_signature: string;
+}
 
-  // Clear Razorpay localStorage
-  const clearRazorpayCache = useCallback(() => {
-    if (typeof window !== "undefined") {
-      Object.keys(localStorage).forEach((key) => {
-        if (key.includes("razorpay") || key.includes("rzp")) {
-          localStorage.removeItem(key);
-        }
-      });
-    }
-  }, []);
+const priceData: PriceData[] = [
+  {
+    tier: "Basic",
+    monthly: 19,
+    yearly: 199,
+    serviceOne: "500 GB Storage",
+    serviceTwo: "500 GB Storage",
+    serviceThree: "500 GB Storage",
+  },
+  {
+    tier: "Professional",
+    monthly: 270,
+    yearly: 2099,
+    serviceOne: "1 TB Storage",
+    serviceTwo: "5 Users Allowed",
+    serviceThree: "Send up to 10GB",
+  },
+  {
+    tier: "Master",
+    monthly: 39,
+    yearly: 399,
+    serviceOne: "2 TB Storage",
+    serviceTwo: "10 Users Allowed",
+    serviceThree: "Send up to 20GB",
+  },
+];
 
-  // Get user phone number
-  const getUserPhoneNumber = useCallback((): string => {
-    if (!user) return "";
-    const userWithPhone = user as UserWithPhone;
-    return (
-      userWithPhone?.phoneNumber ||
-      userWithPhone?.phone ||
-      userWithPhone?.mobile ||
-      userWithPhone?.contact ||
-      ""
-    );
-  }, [user]);
+const Pricing = () => {
+  const INR_TO_USD = 90; // 1 USD = 83 INR
 
-  // One-time payment logic
-  const handleUpgrade = async (): Promise<void> => {
-    clearRazorpayCache();
+  const [isMonthly, setIsMonthly] = useState(false);
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(false);
+
+  const handleSubscribe = async (tier: string) => {
+    if (!user) return alert("Please login first");
+
+    setLoading(true);
 
     try {
-      setLoading(true);
+      const planType: "monthly" | "annual" = isMonthly ? "monthly" : "annual";
 
-      const scriptLoaded = await loadRazorpayScript();
-      if (!scriptLoaded) {
-        alert("Razorpay SDK failed to load. Please check your connection.");
-        return;
-      }
+      const response = await axios.post("/billing/create-subscription", {
+        planType,
+        userId: user.id,
+        tier,
+      });
 
-      const orderResponse = await axiosInstance.post<RazorpayOrder>(
-        "/billing/create-order"
-      );
-      const { id, amount, currency, key } = orderResponse.data;
+      const subscription: { id: string } = response.data;
 
       const options: RazorpayOptions = {
-        key: key,
-        amount: amount,
-        currency: currency,
-        name: "Stoq",
-        description: "Professional Plan - One Time Payment",
-        order_id: id,
-        handler: async function (response: RazorpayResponse) {
-          try {
-            console.log("Payment successful, verifying...", response);
-
-            await axiosInstance.post("/billing/verify-payment", {
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature,
-            });
-
-            alert("Payment successful! Your plan has been upgraded.");
-            await refreshUser();
-          } catch (error) {
-            console.error("Payment verification failed:", error);
-            alert("Payment verification failed. Please contact support.");
-          }
-        },
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID as string,
+        subscription_id: subscription.id,
+        name: "Your App Name",
+        description: `${tier} Plan Subscription`,
         prefill: {
-          name: user?.name || "",
-          email: user?.email || "",
-          contact: getUserPhoneNumber(),
+          name: user.name,
+          email: user.email,
         },
         theme: {
-          color: "#4F46E5",
+          color: "#3b82f6",
         },
-        modal: {
-          ondismiss: function () {
-            setLoading(false);
-            console.log("Payment modal closed");
-          },
+        handler: async (response: RazorpayPaymentResponse) => {
+          await axios.post("/subscriptions/verify", response);
+          alert("Subscription successful!");
         },
       };
 
-      const razorpay = new window.Razorpay(options);
-      razorpay.open();
-    } catch (error) {
-      console.error("Upgrade failed:", error);
-      alert("Upgrade failed. Please try again.");
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        alert("Failed to create subscription: " + error.message);
+      } else {
+        alert("Failed to create subscription");
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  // Subscription payment logic
-  // Add fix function
-  const handleFixSubscription = async (): Promise<void> => {
-    try {
-      setSubscriptionLoading(true);
-      const response = await axiosInstance.post("/billing/fix-subscription");
-
-      if (response.data.success) {
-        alert(response.data.message);
-        await refreshUser();
-      } else {
-        alert("Fix failed: " + response.data.error);
-      }
-    } catch (error) {
-      console.error("Fix failed:", error);
-      alert("Failed to fix subscription. Please contact support.");
-    } finally {
-      setSubscriptionLoading(false);
-    }
-  };
-  // FIXED: Subscription payment logic with cache clearing
-  const handleSubscription = async (): Promise<void> => {
-    // 🚨 CRITICAL: Clear ALL Razorpay cache
-    if (typeof window !== "undefined") {
-      const keys = Object.keys(localStorage);
-      keys.forEach((key) => {
-        if (key.includes("razorpay") || key.includes("rzp")) {
-          localStorage.removeItem(key);
-        }
-      });
-      console.log("✅ Cleared all Razorpay cache");
-    }
-
-    try {
-      setSubscriptionLoading(true);
-
-      const scriptLoaded = await loadRazorpayScript();
-      if (!scriptLoaded) {
-        alert("Razorpay SDK failed to load. Please check your connection.");
-        return;
-      }
-
-      const subscriptionResponse =
-        await axiosInstance.post<RazorpaySubscription>(
-          "/billing/create-subscription"
-        );
-      const { id, amount, currency, key } = subscriptionResponse.data;
-
-      const options: RazorpayOptions = {
-        key: key,
-        amount: amount,
-        currency: currency,
-        name: "Stoq",
-        description: "Professional Plan - Monthly Subscription",
-        subscription_id: id,
-        handler: async function (response: RazorpayResponse) {
-          try {
-            console.log(
-              "Subscription payment successful, verifying...",
-              response
-            );
-
-            await axiosInstance.post("/billing/verify-subscription", {
-              razorpay_subscription_id: response.razorpay_subscription_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature,
-            });
-
-            alert(
-              "Subscription activated! You'll be automatically billed monthly."
-            );
-            await refreshUser();
-          } catch (error) {
-            console.error("Subscription verification failed:", error);
-            alert("Subscription verification failed. Please contact support.");
-          }
-        },
-        prefill: {
-          name: user?.name || "",
-          email: user?.email || "",
-          contact: "", // 🚨 Force empty to prevent customer mixing
-        },
-        theme: {
-          color: "#10B981",
-        },
-        modal: {
-          ondismiss: function () {
-            setSubscriptionLoading(false);
-            console.log("Subscription modal closed");
-          },
-        },
-      };
-
-      const razorpay = new window.Razorpay(options);
-      razorpay.open();
-    } catch (error) {
-      console.error("Subscription failed:", error);
-      alert("Subscription setup failed. Please try again.");
-    } finally {
-      setSubscriptionLoading(false);
-    }
-  };
-
-  // Create new subscription after expiry
-  const handleNewSubscription = async (): Promise<void> => {
-    try {
-      setSubscriptionLoading(true);
-
-      const confirmNew = window.confirm(
-        "This will start a NEW subscription with today as your billing date. Continue?"
-      );
-
-      if (!confirmNew) return;
-
-      const response = await axiosInstance.post(
-        "/billing/create-new-subscription"
-      );
-
-      if (response.data.success) {
-        // Load Razorpay script for payment
-        const scriptLoaded = await loadRazorpayScript();
-        if (!scriptLoaded) {
-          alert("Razorpay SDK failed to load. Please check your connection.");
-          return;
-        }
-
-        const { id, amount, currency, key } = response.data;
-
-        const options: RazorpayOptions = {
-          key: key,
-          amount: amount,
-          currency: currency,
-          name: "Stoq",
-          description: "Professional Plan - New Subscription",
-          subscription_id: id,
-          handler: async function (response: RazorpayResponse) {
-            try {
-              console.log(
-                "Subscription payment successful, verifying...",
-                response
-              );
-
-              const verifyResponse = await axiosInstance.post(
-                "/billing/verify-subscription",
-                {
-                  razorpay_subscription_id: response.razorpay_subscription_id,
-                  razorpay_payment_id: response.razorpay_payment_id,
-                  razorpay_signature: response.razorpay_signature,
-                }
-              );
-
-              if (verifyResponse.data.success) {
-                alert(
-                  "Subscription activated! You'll be automatically billed monthly."
-                );
-                await refreshUser();
-              } else {
-                // If verification fails, try syncing
-                const syncResponse = await axiosInstance.get(
-                  "/billing/sync-subscription"
-                );
-                if (syncResponse.data.success) {
-                  alert(
-                    "Subscription processed! Status: " +
-                      syncResponse.data.subscriptionStatus
-                  );
-                  await refreshUser();
-                } else {
-                  alert(
-                    "Payment received but activation pending. Please wait a moment."
-                  );
-                }
-              }
-            } catch (error) {
-              console.error("Subscription verification failed:", error);
-
-              // Try sync as fallback
-              try {
-                const syncResponse = await axiosInstance.get(
-                  "/billing/sync-subscription"
-                );
-                if (
-                  syncResponse.data.success &&
-                  syncResponse.data.hasCapturedPayment
-                ) {
-                  alert(
-                    "Payment successful! Your subscription is being activated."
-                  );
-                  await refreshUser();
-                } else {
-                  alert(
-                    "Payment processing... Please check your email for confirmation."
-                  );
-                }
-              } catch (error: unknown) {
-                alert(
-                  `Payment received! Please check your email for confirmation.${error}`
-                );
-              }
-            }
-          },
-          prefill: {
-            name: user?.name || "",
-            email: user?.email || "",
-            contact: getUserPhoneNumber(),
-          },
-          theme: {
-            color: "#10B981",
-          },
-          modal: {
-            ondismiss: function () {
-              setSubscriptionLoading(false);
-              console.log("New subscription modal closed");
-            },
-          },
-        };
-
-        const razorpay = new window.Razorpay(options);
-        razorpay.open();
-      } else {
-        // Handle backend validation error
-        if (response.data.canCreateNew === false) {
-          alert(`❌ ${response.data.error}`);
-        } else {
-          alert("Failed to create new subscription: " + response.data.error);
-        }
-      }
-    } catch (error: unknown) {
-      console.error("New subscription failed:", error);
-
-      if (isAxiosError(error)) {
-        alert(
-          error.response?.data?.error ||
-            "Failed to create new subscription. Please try again."
-        );
-      } else {
-        alert("Failed to create new subscription. Please try again.");
-      }
-    } finally {
-      setSubscriptionLoading(false);
-    }
-  };
-
-  // Clean up stuck subscriptions
-  const handleCleanupStuckSubscription = async (): Promise<void> => {
-    try {
-      setSubscriptionLoading(true);
-
-      const confirmCleanup = window.confirm(
-        "This will clean up the pending subscription that never activated. Continue?"
-      );
-
-      if (!confirmCleanup) return;
-
-      const response = await axiosInstance.post(
-        "/billing/cleanup-stuck-subscription"
-      );
-
-      if (response.data.success) {
-        alert(
-          response.data.message || "Stuck subscription cleaned up successfully!"
-        );
-        await refreshUser();
-      } else {
-        alert("Failed to clean up: " + response.data.error);
-      }
-    } catch (error: unknown) {
-      console.error("Cleanup failed:", error);
-      alert("Failed to clean up stuck subscription. Please try again.");
-    } finally {
-      setSubscriptionLoading(false);
-    }
-  };
-
-  // Manual verification
-  const handleManualVerify = async (): Promise<void> => {
-    try {
-      await refreshUser();
-      if (user?.plan === "paid") {
-        alert("Payment verified! Your plan has been upgraded.");
-      } else {
-        alert(
-          "Payment still processing or failed. Please try the payment again."
-        );
-      }
-    } catch (error) {
-      console.error("Manual verification failed:", error);
-      alert("Error checking payment status.");
-    }
-  };
-
-  // Cancel subscription
-  const handleCancelSubscription = async (): Promise<void> => {
-    try {
-      setCancelling(true);
-      const response = await axiosInstance.post("/billing/cancel-subscription");
-
-      if (response.data.success) {
-        alert(
-          "Subscription cancelled successfully. You'll have access until the end of your billing period."
-        );
-        await refreshUser();
-        setShowCancelConfirm(false);
-      } else {
-        alert("Failed to cancel subscription: " + response.data.error);
-      }
-    } catch (error: unknown) {
-      console.error("Cancellation failed:", error);
-
-      if (isAxiosError(error)) {
-        if (error.response?.status === 400) {
-          const errorMessage =
-            error.response.data?.error ||
-            "Subscription is still activating. Please wait 1-2 minutes.";
-          alert(`⚠️ ${errorMessage}`);
-        } else {
-          alert(
-            error.response?.data?.error ||
-              "Failed to cancel subscription. Please try again."
-          );
-        }
-      } else if (error instanceof Error) {
-        alert(
-          error.message || "Failed to cancel subscription. Please try again."
-        );
-      } else {
-        alert("Failed to cancel subscription. Please try again.");
-      }
-    } finally {
-      setCancelling(false);
-    }
-  };
-
-  // Helper functions
-  const getNextBillingDate = (): string => {
-    const today = new Date();
-    const nextMonth = new Date(today.setMonth(today.getMonth() + 1));
-    return nextMonth.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-  };
-
-  const getActualExpiryDate = (): string => {
-    if (user?.subscriptionExpiresAt) {
-      return new Date(user.subscriptionExpiresAt).toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      });
-    }
-    return "Not set";
-  };
-
-  // Check if user can create new subscription
-  const canCreateNewSubscription = (): boolean => {
-    if (!user?.subscriptionExpiresAt) return true;
-
-    const now = new Date();
-    const expiryDate = new Date(user.subscriptionExpiresAt);
-
-    // Only allow new subscription AFTER expiry date
-    return now >= expiryDate;
-  };
-
-  const getPlanBenefits = (plan: keyof typeof PLANS): string[] => {
-    const benefits = {
-      free: [
-        "100 product limit",
-        "Basic inventory management",
-        "Sales tracking",
-        "Customer management",
-        "Basic reporting",
-      ],
-      paid: [
-        "10,000 product limit",
-        "Unlimited products",
-        "Advanced analytics",
-        "Barcode system",
-        "Custom reports",
-        "Priority support",
-        "Multiple user access",
-        "API access",
-        "Export capabilities",
-      ],
-    };
-    return benefits[plan];
-  };
-
-  const getFeatureIcon = (feature: string): string => {
-    if (feature.includes("limit") || feature.includes("unlimited")) return "📊";
-    if (feature.includes("analytics") || feature.includes("report"))
-      return "📈";
-    if (feature.includes("support")) return "🎯";
-    if (feature.includes("barcode")) return "📷";
-    if (feature.includes("api")) return "🔌";
-    if (feature.includes("export")) return "📤";
-    return "✓";
-  };
-
-  const handleNuclearReset = async (): Promise<void> => {
-    try {
-      const confirmReset = window.confirm(
-        "🚨 NUCLEAR OPTION: This will completely delete your subscription and reset you to free plan. Continue?"
-      );
-
-      if (!confirmReset) return;
-
-      setSubscriptionLoading(true);
-      const response = await axiosInstance.post("/billing/nuclear-reset");
-
-      if (response.data.success) {
-        alert(response.data.message);
-        await refreshUser();
-      } else {
-        alert("Reset failed: " + response.data.error);
-      }
-    } catch (error) {
-      console.error("Nuclear reset failed:", error);
-      alert("Reset failed. Please contact support.");
-    } finally {
-      setSubscriptionLoading(false);
-    }
-  };
-
-  // Add to buttons:
-
-  // Status detection
-  const isSubscribedUser = Boolean(
-    user?.subscriptionId &&
-      user?.subscriptionStatus &&
-      ["active", "cancelled_at_period_end", "pending", "past_due"].includes(
-        user.subscriptionStatus
-      )
-  );
-
-  const isOneTimeUser = user?.plan === "paid" && !user?.subscriptionId;
-
-  const isScheduledCancellation =
-    user?.subscriptionId &&
-    user?.subscriptionStatus === "cancelled_at_period_end";
-
-  const isFullyCancelledUser =
-    user?.subscriptionId &&
-    ["cancelled", "expired", "completed"].includes(
-      user.subscriptionStatus || ""
-    );
-
-  const isStuckSubscription =
-    user?.subscriptionId && user?.subscriptionStatus === "active";
-
-  // Show loading state while auth is loading
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            Pricing Plans
-          </h1>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Choose the perfect plan for your business needs. All plans include
-            core features with flexible scaling options.
-          </p>
+    <div className="flex">
+      {/* Sidebar */}
+
+      {/* Main Content */}
+      <div className="flex-1 p-8">
+        <h1 className="text-center my-8 text-3xl text-midnight font-mont font-bold text-gray-500">
+          Our Pricing {user?.name}
+        </h1>
+
+        <div className="flex items-center font-mont gap-4 justify-center mt-10">
+          <span>Annually</span>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              checked={isMonthly}
+              onChange={() => setIsMonthly(!isMonthly)}
+              className="sr-only peer"
+            />
+            <div className="w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-blue-600 transition"></div>
+            <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition peer-checked:translate-x-5"></div>
+          </label>
+          <span>Monthly</span>
         </div>
 
-        {/* Current Plan Status */}
-        {user?.plan === "paid" && (
-          <div className="bg-white rounded-xl shadow-lg border border-green-200 p-6 mb-8">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-              <div className="flex items-center space-x-4 mb-4 md:mb-0">
-                <div className="flex items-center justify-center w-12 h-12 bg-green-100 rounded-full">
-                  <span className="text-2xl">
-                    {isScheduledCancellation ? "⏸️" : "🎉"}
-                  </span>
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-green-800">
-                    {isSubscribedUser && !isScheduledCancellation
-                      ? "Active Professional Subscription"
-                      : isScheduledCancellation
-                      ? "Subscription Active (Cancels at period end)"
-                      : isFullyCancelledUser
-                      ? "Subscription Ended"
-                      : isOneTimeUser
-                      ? "Active Professional Plan (One-Time)"
-                      : "Subscription Status"}
-                  </h3>
-                  <p className="text-green-600">
-                    {isSubscribedUser && !isScheduledCancellation ? (
-                      <>
-                        Next billing date:{" "}
-                        <strong>{getNextBillingDate()}</strong>
-                      </>
-                    ) : isScheduledCancellation ? (
-                      <>
-                        Access until: <strong>{getActualExpiryDate()}</strong>
-                      </>
-                    ) : isFullyCancelledUser ? (
-                      <>
-                        Subscription ended on:{" "}
-                        <strong>{getActualExpiryDate()}</strong>
-                      </>
-                    ) : isOneTimeUser ? (
-                      <>One-time payment - Lifetime access</>
-                    ) : (
-                      <>Subscription status unknown</>
-                    )}
-                  </p>
+        {/* Pricing Cards */}
+        <main className="grid grid-cols-1 md:grid-cols-3 gap-6 justify-items-center mt-10">
+          {priceData.map((curr, i) => {
+            const isMiddle = i === 1; // Only middle card is active
 
-                  {user.subscriptionId && (
-                    <div className="mt-2 space-y-1">
-                      <p className="text-sm text-green-600">
-                        Subscription ID: {user.subscriptionId}
-                      </p>
-                      {user.subscriptionStatus && (
-                        <p className="text-sm text-green-600">
-                          Status:{" "}
-                          <span className="capitalize">
-                            {user.subscriptionStatus.replace(/_/g, " ")}
-                          </span>
-                          {isStuckSubscription && (
-                            <span className="text-orange-600 ml-1">
-                              (Pending Activation)
-                            </span>
-                          )}
-                        </p>
-                      )}
-                    </div>
-                  )}
+            return (
+              <div
+                key={i}
+                className={`
+        flex flex-col gap-6 divide-y divide-gray-300 
+        items-center justify-center pt-8 pb-12 w-full max-w-sm rounded-xl
+        ${
+          isMiddle
+            ? "text-white bg-gradient-to-r from-blue-500 to-blue-700 shadow-lg scale-105 transform transition-all"
+            : "bg-gray-100 text-gray-400 border border-gray-300 opacity-50 cursor-not-allowed"
+        }
+      `}
+              >
+                <span className="font-bold">{curr.tier}</span>
 
-                  {/* Show message for scheduled cancellation */}
-                  {isScheduledCancellation && (
-                    <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                      <p className="text-sm text-yellow-800">
-                        <strong>Note:</strong> You can start a new subscription
-                        after {getActualExpiryDate()}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Show message for stuck subscription */}
-                  {isStuckSubscription && (
-                    <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-lg">
-                      <p className="text-sm text-orange-800">
-                        <strong>Attention:</strong> Your subscription is pending
-                        activation. You can cancel it and try again.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex space-x-3 flex-wrap gap-2">
-                {/* Active subscription - can cancel */}
-                {isSubscribedUser && !isScheduledCancellation && (
-                  <button
-                    onClick={() => setShowCancelConfirm(true)}
-                    className="px-6 py-2 text-sm font-medium text-red-600 bg-white border border-red-300 rounded-lg hover:bg-red-50 transition-colors duration-200"
-                  >
-                    Cancel Subscription
-                  </button>
-                )}
-                <button
-                  onClick={handleNuclearReset}
-                  disabled={subscriptionLoading}
-                  className="px-6 py-2 text-sm font-medium text-white bg-red-600 border border-red-700 rounded-lg hover:bg-red-700 transition-colors duration-200 disabled:opacity-50"
-                >
-                  {subscriptionLoading ? "Resetting..." : "Nuclear Reset"}
-                </button>
-                {/* Stuck subscription - show cleanup button */}
-                {isStuckSubscription && (
-                  <button
-                    onClick={handleCleanupStuckSubscription}
-                    disabled={subscriptionLoading}
-                    className="px-6 py-2 text-sm font-medium text-orange-600 bg-white border border-orange-300 rounded-lg hover:bg-orange-50 transition-colors duration-200 disabled:opacity-50"
-                  >
-                    {subscriptionLoading
-                      ? "Cleaning..."
-                      : "Clean Up Stuck Subscription"}
-                  </button>
-                )}
-                {user?.subscriptionId && (
-                  <button
-                    onClick={handleFixSubscription}
-                    disabled={subscriptionLoading}
-                    className="px-6 py-2 text-sm font-medium text-red-600 bg-white border border-red-300 rounded-lg hover:bg-red-50 transition-colors duration-200 disabled:opacity-50"
-                  >
-                    {subscriptionLoading ? "Fixing..." : "Fix Subscription"}
-                  </button>
-                )}
-
-                {/* Scheduled cancellation OR fully cancelled - show new subscription button ONLY after expiry */}
-                {(isScheduledCancellation || isFullyCancelledUser) &&
-                  canCreateNewSubscription() && (
-                    <button
-                      onClick={handleNewSubscription}
-                      disabled={subscriptionLoading}
-                      className="px-6 py-2 text-sm font-medium text-blue-600 bg-white border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors duration-200 disabled:opacity-50"
-                    >
-                      {subscriptionLoading
-                        ? "Starting..."
-                        : "Start New Subscription"}
-                    </button>
-                  )}
-
-                {/* Scheduled cancellation - show message if cannot create new yet */}
-                {isScheduledCancellation && !canCreateNewSubscription() && (
-                  <button
-                    disabled
-                    className="px-6 py-2 text-sm font-medium text-gray-400 bg-gray-100 border border-gray-300 rounded-lg cursor-not-allowed"
-                  >
-                    Available after {getActualExpiryDate()}
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Payment Type Selector - Only show for free users */}
-        {user?.plan === "free" && (
-          <div className="max-w-md mx-auto mb-8">
-            <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                Choose Payment Type:
-              </label>
-              <div className="flex space-x-4">
-                <button
-                  onClick={() => setPaymentType("subscription")}
-                  className={`flex-1 py-2 px-4 rounded-lg border transition-colors ${
-                    paymentType === "subscription"
-                      ? "bg-green-500 text-white border-green-500"
-                      : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                  }`}
-                >
-                  Monthly Subscription
-                </button>
-                <button
-                  onClick={() => setPaymentType("one-time")}
-                  className={`flex-1 py-2 px-4 rounded-lg border transition-colors ${
-                    paymentType === "one-time"
-                      ? "bg-blue-500 text-white border-blue-500"
-                      : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                  }`}
-                >
-                  One-Time Payment
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Plans Grid */}
-        <div className="grid lg:grid-cols-2 gap-8 max-w-6xl mx-auto">
-          {/* Free Plan Card */}
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden transition-all duration-300 hover:shadow-xl">
-            <div className="p-8">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h3 className="text-2xl font-bold text-gray-900">
-                    {PLANS.free.name}
-                  </h3>
-                  <p className="text-gray-500 mt-1">
-                    Perfect for getting started
-                  </p>
-                </div>
-                {user?.plan === "free" && (
-                  <span className="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-blue-100 text-blue-800 border border-blue-200">
-                    Current Plan
-                  </span>
-                )}
-              </div>
-
-              <div className="mb-6">
-                <span className="text-4xl font-bold text-gray-900">
-                  ${PLANS.free.price}
+                <span className="text-[3.5rem] font-extrabold pb-4">
+                  $
+                  {(
+                    (isMonthly ? curr.monthly : curr.yearly) / INR_TO_USD
+                  ).toFixed(2)}
                 </span>
-                <span className="text-gray-500 ml-2">/month</span>
-              </div>
 
-              <ul className="space-y-4 mb-8">
-                {getPlanBenefits("free").map((benefit, index) => (
-                  <li key={index} className="flex items-start space-x-3">
-                    <span className="flex-shrink-0 w-6 h-6 bg-green-100 rounded-full flex items-center justify-center text-green-600 text-sm mt-0.5">
-                      ✓
-                    </span>
-                    <span className="text-gray-700">{benefit}</span>
-                  </li>
-                ))}
-              </ul>
+                <span className="pb-4 font-bold">{curr.serviceOne}</span>
+                <span className="pb-4 font-bold">{curr.serviceTwo}</span>
+                <span className="pb-4 font-bold">{curr.serviceThree}</span>
 
-              {user?.plan === "free" && (
                 <button
-                  disabled
-                  className="w-full bg-gray-100 text-gray-400 px-6 py-4 rounded-xl font-semibold cursor-not-allowed"
+                  disabled={!isMiddle || loading} // Disable side buttons
+                  onClick={() => handleSubscribe(curr.tier)}
+                  className={`
+          font-bold px-14 rounded-lg py-3 transition
+          ${
+            isMiddle
+              ? "bg-white text-blue-600 hover:bg-gray-100"
+              : "bg-gray-300 text-gray-500 cursor-not-allowed"
+          }
+        `}
                 >
-                  Current Plan
+                  {loading && isMiddle
+                    ? "Processing..."
+                    : isMiddle
+                    ? "Subscribe"
+                    : "Unavailable"}
                 </button>
-              )}
-            </div>
-          </div>
-
-          {/* Professional Plan Card */}
-          <div className="bg-gradient-to-br from-blue-600 to-purple-700 rounded-2xl shadow-2xl overflow-hidden transform transition-all duration-300 hover:scale-105">
-            <div className="p-8 text-white">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h3 className="text-2xl font-bold">{PLANS.paid.name}</h3>
-                  <p className="text-blue-100 mt-1">For growing businesses</p>
-                </div>
-                {user?.plan === "paid" && (
-                  <span className="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-white bg-opacity-20 text-white border border-white border-opacity-30">
-                    {isSubscribedUser ? "Active Subscription" : "Plan Active"}
-                  </span>
-                )}
-                <div className="bg-yellow-400 text-yellow-800 px-3 py-1 rounded-full text-sm font-semibold">
-                  POPULAR
-                </div>
               </div>
-
-              <div className="mb-6">
-                <span className="text-4xl font-bold">${PLANS.paid.price}</span>
-                <span className="text-blue-100 ml-2">
-                  {paymentType === "subscription" ? "/month" : " one-time"}
-                </span>
-                <p className="text-blue-100 text-sm mt-1">
-                  {paymentType === "subscription"
-                    ? "Billed monthly, cancel anytime"
-                    : "One-time payment, lifetime access"}
-                </p>
-              </div>
-
-              {/* Payment Type Info */}
-              {user?.plan === "free" && (
-                <div className="bg-white bg-opacity-10 rounded-lg p-4 mb-6">
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold">
-                      {paymentType === "subscription"
-                        ? "Monthly Subscription"
-                        : "One-Time Payment"}
-                    </span>
-                    <span
-                      className={`px-2 py-1 rounded text-xs font-medium ${
-                        paymentType === "subscription"
-                          ? "bg-green-500 text-white"
-                          : "bg-blue-500 text-white"
-                      }`}
-                    >
-                      {paymentType === "subscription"
-                        ? "RECURRING"
-                        : "LIFETIME"}
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              <ul className="space-y-4 mb-8">
-                {getPlanBenefits("paid").map((benefit, index) => (
-                  <li key={index} className="flex items-start space-x-3">
-                    <span className="flex-shrink-0 w-6 h-6 bg-white bg-opacity-20 rounded-full flex items-center justify-center text-white text-sm mt-0.5">
-                      {getFeatureIcon(benefit)}
-                    </span>
-                    <span className="text-white">{benefit}</span>
-                  </li>
-                ))}
-              </ul>
-
-              {user?.plan === "free" && (
-                <div className="space-y-3">
-                  <button
-                    onClick={
-                      paymentType === "subscription"
-                        ? handleSubscription
-                        : handleUpgrade
-                    }
-                    disabled={
-                      paymentType === "subscription"
-                        ? subscriptionLoading
-                        : loading
-                    }
-                    className={`w-full px-6 py-4 rounded-xl font-semibold transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center ${
-                      paymentType === "subscription"
-                        ? "bg-green-500 text-white hover:bg-green-600"
-                        : "bg-white text-blue-600 hover:bg-gray-100"
-                    }`}
-                  >
-                    {paymentType === "subscription" ? (
-                      subscriptionLoading ? (
-                        <>
-                          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                          Setting up Subscription...
-                        </>
-                      ) : (
-                        "Subscribe Now - Monthly"
-                      )
-                    ) : loading ? (
-                      <>
-                        <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mr-2"></div>
-                        Processing...
-                      </>
-                    ) : (
-                      "Upgrade Now - One Time"
-                    )}
-                  </button>
-
-                  <button
-                    onClick={handleManualVerify}
-                    className="w-full bg-white bg-opacity-10 text-white px-6 py-3 rounded-xl font-semibold hover:bg-opacity-20 transition-colors duration-200 border border-white border-opacity-20"
-                  >
-                    Check Payment Status
-                  </button>
-
-                  <div className="bg-white bg-opacity-10 rounded-lg p-4 mt-4">
-                    <p className="text-sm font-semibold text-white mb-2">
-                      💳 Test Payment Details:
-                    </p>
-                    <div className="text-xs text-blue-100 space-y-1">
-                      <p>
-                        Card:{" "}
-                        <span className="font-mono">4111 1111 1111 1111</span>
-                      </p>
-                      <p>
-                        Expiry: <span className="font-mono">12/34</span> | CVV:{" "}
-                        <span className="font-mono">123</span>
-                      </p>
-                      <p className="text-yellow-200 mt-2">
-                        Use this test card for both subscription and one-time
-                        payments
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {user?.plan === "paid" && (
-                <button
-                  disabled
-                  className="w-full bg-white bg-opacity-20 text-white px-6 py-4 rounded-xl font-semibold cursor-not-allowed border border-white border-opacity-30"
-                >
-                  {isSubscribedUser
-                    ? "Active Subscription"
-                    : "Plan Active (One-Time)"}
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
+            );
+          })}
+        </main>
       </div>
-
-      {/* Cancel Subscription Modal */}
-      {showCancelConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full">
-            <h3 className="text-xl font-bold text-gray-900 mb-2">
-              Cancel Subscription?
-            </h3>
-            <p className="text-gray-600 mb-4">
-              Your subscription will remain active until {getActualExpiryDate()}
-              . You'll lose access to Professional features after that date.
-            </p>
-            <p className="text-sm text-gray-500 mb-6">
-              You can start a new subscription anytime after{" "}
-              {getActualExpiryDate()} if you change your mind.
-            </p>
-            <div className="flex space-x-3">
-              <button
-                onClick={() => setShowCancelConfirm(false)}
-                className="flex-1 px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-              >
-                Keep Subscription
-              </button>
-              <button
-                onClick={handleCancelSubscription}
-                disabled={cancelling}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
-              >
-                {cancelling ? "Cancelling..." : "Cancel Subscription"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
 
-export default BillingPage;
+export default Pricing;
