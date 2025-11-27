@@ -8,6 +8,8 @@ import crypto from "crypto";
 import {
   validateEmail,
   sendVerificationEmail,
+  sendNewUserNotification,
+  sendWelcomeEmail,
 } from "../utils/emailVerification.js";
 
 export const signup = async (req, res) => {
@@ -56,6 +58,13 @@ export const signup = async (req, res) => {
       email,
       emailVerificationToken
     );
+    sendNewUserNotification(user).catch((error) => {
+      console.error("Failed to send admin notification:", error);
+    });
+    // NEW: Send welcome email to user (non-blocking, optional)
+    sendWelcomeEmail(user).catch((error) => {
+      console.error("Failed to send welcome email:", error);
+    });
 
     // Send success response with user data
     res.status(201).json({
