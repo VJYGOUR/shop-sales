@@ -1,35 +1,46 @@
+// scripts/fixSubscriptionDates.js
 import mongoose from "mongoose";
 import { configDotenv } from "dotenv";
 import User from "../models/user.models.js";
 
 configDotenv();
 
-const MONGO_URI =
-  process.env.MONGO_URI || "mongodb://localhost:27017/your-db-name";
+const MONGO_URI = process.env.MONGO_URI;
 
-const migratePaidToProfessional = async () => {
+const fixSubscriptions = async () => {
   try {
-    // 1️⃣ Connect to MongoDB
-    await mongoose.connect(MONGO_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
-    console.log("✅ Connected to MongoDB");
+    await mongoose.connect(MONGO_URI);
+    console.log("Connected to MongoDB");
 
-    // 2️⃣ Update users
-    const result = await User.updateMany(
-      { plan: "paid" },
-      { plan: "professional" }
-    );
-    console.log(`🎉 Migration complete: ${result.modifiedCount} users updated`);
-  } catch (err) {
-    console.error("❌ Migration failed:", err);
-  } finally {
-    // 3️⃣ Close connection
-    await mongoose.connection.close();
-    console.log("🔌 Connection closed");
+    const users = await User.find({
+      subscriptionStatus: "active",
+      subscriptionType: { $in: ["monthly", "annual"] },
+    });
+
+    console.log(`Found ${users.length} active users with subscriptions`);
+
+    const now = new Date();
+
+    for (const user of users) {
+      const days = user.subscriptionType === "monthly" ? 30 : 365;
+
+      user.subscriptionExpiresAt = new Date(
+        now.getTime() + days * 24 * 60 * 60 * 1000
+      );
+      console.log(user.subscriptionExpiresAt);
+      await user.save();
+
+      console.log(
+        `Updated ${user.name} (${user.email}): ${user.subscriptionType} → expires at ${user.subscriptionExpiresAt}`
+      );
+    }
+
+    console.log("All subscriptions updated successfully!");
     process.exit(0);
+  } catch (err) {
+    console.error("Migration failed:", err);
+    process.exit(1);
   }
 };
 
-migratePaidToProfessional();
+fixSubscriptions();
