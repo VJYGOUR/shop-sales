@@ -82,10 +82,10 @@ export const sendVerificationEmail = async (email, verificationToken) => {
     const msg = {
       from: process.env.SENDGRID_FROM_EMAIL, // Your FROM email stays same
       to: email,
-      subject: "Verify Your LogTaskr Account",
+      subject: "Verify Your Stoq Account",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2>Please verify Your Email to start using LogTaskr</h2>
+          <h2>Please verify Your Email to start using Stoq</h2>
           <p>Please click the button below to verify your email address:</p>
           <a href="${verificationUrl}" 
              style="background-color: #007bff; color: white; padding: 12px 24px; 
@@ -116,7 +116,7 @@ export const sendNewUserNotification = async (user) => {
     const msg = {
       to: process.env.ADMIN_EMAIL || process.env.SENDGRID_FROM_EMAIL,
       from: process.env.SENDGRID_FROM_EMAIL,
-      subject: "🎉 New User Registered on LogTaskr!",
+      subject: "🎉 New User Registered on Stoq!",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #3B82F6;">New User Alert!</h2>
@@ -150,10 +150,10 @@ export const sendWelcomeEmail = async (user) => {
     const msg = {
       to: user.email,
       from: process.env.SENDGRID_FROM_EMAIL,
-      subject: "Welcome to LogTaskr! 🎉",
+      subject: "Welcome to Stoq! 🎉",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #3B82F6;">Welcome to LogTaskr, ${user.name}! 🎉</h2>
+          <h2 style="color: #3B82F6;">Welcome to Stoq, ${user.name}! 🎉</h2>
           <p>We're excited to have you on board.</p>
           <p>Ready to get started? <a href="${process.env.FRONTEND_URL}">Login to your account</a></p>
         </div>
