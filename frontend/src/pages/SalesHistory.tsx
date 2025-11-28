@@ -106,11 +106,16 @@ const SalesHistory: React.FC = () => {
   }, [filteredSales]);
 
   const sortedProducts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    filteredSales.forEach(
-      (s) => (counts[s.productName] = (counts[s.productName] || 0) + s.quantity)
-    );
-    return Object.entries(counts).sort((a, b) => b[1] - a[1]);
+    const counts: Record<string, { name: string; quantity: number }> = {};
+
+    filteredSales.forEach((s) => {
+      if (!counts[s.productId]) {
+        counts[s.productId] = { name: s.productName, quantity: 0 };
+      }
+      counts[s.productId].quantity += s.quantity;
+    });
+
+    return Object.entries(counts).sort((a, b) => b[1].quantity - a[1].quantity);
   }, [filteredSales]);
 
   const totalProductPages =
@@ -507,9 +512,9 @@ const SalesHistory: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {paginatedProducts.map(([name, qty], idx) => (
+                      {paginatedProducts.map(([id, data], idx) => (
                         <tr
-                          key={name}
+                          key={id}
                           className="hover:bg-gray-50 transition-colors"
                         >
                           <td className="px-2 sm:px-4 py-2 font-medium text-gray-700">
@@ -528,15 +533,16 @@ const SalesHistory: React.FC = () => {
                             </span>
                           </td>
                           <td className="px-2 sm:px-4 py-2 text-gray-700 text-sm truncate max-w-[100px] sm:max-w-none">
-                            {name}
+                            {data.name}
                           </td>
                           <td className="px-2 sm:px-4 py-2 font-semibold text-blue-600 text-sm">
-                            {qty.toLocaleString()}
+                            {data.quantity.toLocaleString()}
                           </td>
                           <td className="px-2 sm:px-4 py-2 text-green-600 font-medium text-sm">
-                            {((qty / summaryStats.totalQuantity) * 100).toFixed(
-                              1
-                            )}
+                            {(
+                              (data.quantity / summaryStats.totalQuantity) *
+                              100
+                            ).toFixed(1)}
                             %
                           </td>
                         </tr>
