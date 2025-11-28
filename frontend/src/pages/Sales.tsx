@@ -16,6 +16,8 @@ const Sales: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [editingPrice, setEditingPrice] = useState<string | null>(null); // Track which item is being edited
   const [tempPrice, setTempPrice] = useState<string>(""); // Temporary price input
+  const [searchTerm, setSearchTerm] = useState(""); // Search term for products
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]); // Filtered products for search
 
   // Load products
   useEffect(() => {
@@ -23,6 +25,7 @@ const Sales: React.FC = () => {
       try {
         const productsData = await productAPI.getProducts();
         setProducts(productsData);
+        setFilteredProducts(productsData); // Initialize filtered products
       } catch (error) {
         console.error("Error loading products:", error);
       } finally {
@@ -31,6 +34,21 @@ const Sales: React.FC = () => {
     };
     loadProducts();
   }, []);
+
+  // Filter products based on search term
+  useEffect(() => {
+    if (searchTerm.trim() === "") {
+      setFilteredProducts(products);
+    } else {
+      const filtered = products.filter(
+        (product) =>
+          product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          product.sku?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          product.category?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      setFilteredProducts(filtered);
+    }
+  }, [searchTerm, products]);
 
   // Handle barcode scan
   const handleScan = async (result: ScanResult) => {
@@ -221,41 +239,98 @@ const Sales: React.FC = () => {
           </button>
         </div>
 
-        {/* Manual Product Selection (Backup) */}
-        <div className="mt-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Or select product manually:
-          </label>
-          <select
-            onChange={(e) => {
-              const product = products.find((p) => p._id === e.target.value);
-              if (product) {
-                addToCart(product);
-              }
-            }}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          >
-            <option value="">Select a product...</option>
-            {products.map((product) => (
-              <option
-                key={product._id}
-                value={product._id}
-                disabled={product.stock === 0}
-              >
-                {product.name} - ₹{product.salePrice}{" "}
-                {product.stock === 0
-                  ? "(Out of Stock)"
-                  : `(${product.stock} available)`}
-              </option>
-            ))}
-          </select>
+        {/* Search and Manual Product Selection */}
+        <div className="space-y-4">
+          {/* Search Input */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Search Products:
+            </label>
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search by name, SKU, or category..."
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+            {searchTerm && (
+              <p className="text-sm text-gray-500 mt-1">
+                Found {filteredProducts.length} product
+                {filteredProducts.length !== 1 ? "s" : ""}
+                {filteredProducts.length === 0 && " - No products found"}
+              </p>
+            )}
+          </div>
+
+          {/* Product Selection */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Select product manually:
+            </label>
+            <select
+              onChange={(e) => {
+                const product = products.find((p) => p._id === e.target.value);
+                if (product) {
+                  addToCart(product);
+                  setSearchTerm(""); // Clear search after selection
+                }
+              }}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="">Select a product...</option>
+              {filteredProducts.map((product) => (
+                <option
+                  key={product._id}
+                  value={product._id}
+                  disabled={product.stock === 0}
+                >
+                  {product.name} - ₹{product.salePrice}{" "}
+                  {product.stock === 0
+                    ? "(Out of Stock)"
+                    : `(${product.stock} available)`}
+                  {product.sku && ` - SKU: ${product.sku}`}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Quick Product Buttons (for frequently used products) */}
+          {filteredProducts.length > 0 && filteredProducts.length <= 10 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Quick Add:
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {filteredProducts.slice(0, 6).map((product) => (
+                  <button
+                    key={product._id}
+                    onClick={() => {
+                      addToCart(product);
+                      setSearchTerm(""); // Clear search after selection
+                    }}
+                    disabled={product.stock === 0}
+                    className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
+                      product.stock === 0
+                        ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
+                        : "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 hover:border-blue-300"
+                    }`}
+                  >
+                    {product.name}
+                    {product.stock > 0 && (
+                      <span className="ml-1 text-xs">({product.stock})</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Shopping Cart */}
       <div className="bg-white p-6 rounded-lg shadow-sm">
         <h2 className="text-lg font-semibold text-gray-800 mb-4">
-          Shopping Cart
+          Shopping Cart ({cart.length} {cart.length === 1 ? "item" : "items"})
         </h2>
 
         {cart.length === 0 ? (
@@ -275,90 +350,101 @@ const Sales: React.FC = () => {
 
               return (
                 <div
-                  key={index}
-                  className="flex justify-between items-center p-4 border border-gray-200 rounded-lg"
+                  key={`${item.product._id}-${index}`}
+                  className="flex flex-col sm:flex-row sm:justify-between sm:items-center p-4 border border-gray-200 rounded-lg gap-3"
                 >
                   <div className="flex-1">
-                    <p className="font-medium text-gray-800">
-                      {item.product.name}
-                      {isCustomPrice && (
-                        <span className="ml-2 text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
-                          CUSTOM PRICE
-                        </span>
-                      )}
-                    </p>
-
-                    {/* Price Display/Edit */}
-                    <div className="flex items-center space-x-2 mt-1">
-                      {editingPrice === item.product._id ? (
-                        <div className="flex items-center space-x-2">
-                          <input
-                            type="number"
-                            value={tempPrice}
-                            onChange={(e) => setTempPrice(e.target.value)}
-                            className="w-24 px-2 py-1 border border-gray-300 rounded text-sm"
-                            placeholder="Enter price"
-                            min="0"
-                            step="0.01"
-                          />
-                          <button
-                            onClick={() => savePrice(item.product._id)}
-                            className="text-green-600 hover:text-green-800 text-sm"
-                          >
-                            ✅
-                          </button>
-                          <button
-                            onClick={cancelEditPrice}
-                            className="text-red-600 hover:text-red-800 text-sm"
-                          >
-                            ❌
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex items-center space-x-2">
-                          <span className="text-sm text-gray-600">
-                            ₹{itemPrice.toFixed(2)} × {item.quantity} = ₹
-                            {itemTotal.toFixed(2)}
-                          </span>
-                          <button
-                            onClick={() =>
-                              startEditPrice(item.product._id, itemPrice)
-                            }
-                            className="text-blue-600 hover:text-blue-800 text-xs"
-                            title="Edit price"
-                          >
-                            ✏️
-                          </button>
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between">
+                      <div>
+                        <p className="font-medium text-gray-800">
+                          {item.product.name}
                           {isCustomPrice && (
-                            <button
-                              onClick={() => {
-                                setCart(
-                                  cart.map((cartItem) =>
-                                    cartItem.product._id === item.product._id
-                                      ? { ...cartItem, customPrice: undefined }
-                                      : cartItem
-                                  )
-                                );
-                              }}
-                              className="text-gray-600 hover:text-gray-800 text-xs"
-                              title="Reset to original price"
-                            >
-                              🔄
-                            </button>
+                            <span className="ml-2 text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
+                              CUSTOM PRICE
+                            </span>
+                          )}
+                        </p>
+
+                        {/* Price Display/Edit */}
+                        <div className="flex items-center space-x-2 mt-1">
+                          {editingPrice === item.product._id ? (
+                            <div className="flex items-center space-x-2">
+                              <input
+                                type="number"
+                                value={tempPrice}
+                                onChange={(e) => setTempPrice(e.target.value)}
+                                className="w-24 px-2 py-1 border border-gray-300 rounded text-sm"
+                                placeholder="Enter price"
+                                min="0"
+                                step="0.01"
+                                autoFocus
+                              />
+                              <button
+                                onClick={() => savePrice(item.product._id)}
+                                className="text-green-600 hover:text-green-800 text-sm"
+                                title="Save price"
+                              >
+                                ✅
+                              </button>
+                              <button
+                                onClick={cancelEditPrice}
+                                className="text-red-600 hover:text-red-800 text-sm"
+                                title="Cancel"
+                              >
+                                ❌
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center space-x-2">
+                              <span className="text-sm text-gray-600">
+                                ₹{itemPrice.toFixed(2)} × {item.quantity} = ₹
+                                {itemTotal.toFixed(2)}
+                              </span>
+                              <button
+                                onClick={() =>
+                                  startEditPrice(item.product._id, itemPrice)
+                                }
+                                className="text-blue-600 hover:text-blue-800 text-xs"
+                                title="Edit price"
+                              >
+                                ✏️
+                              </button>
+                              {isCustomPrice && (
+                                <button
+                                  onClick={() => {
+                                    setCart(
+                                      cart.map((cartItem) =>
+                                        cartItem.product._id ===
+                                        item.product._id
+                                          ? {
+                                              ...cartItem,
+                                              customPrice: undefined,
+                                            }
+                                          : cartItem
+                                      )
+                                    );
+                                  }}
+                                  className="text-gray-600 hover:text-gray-800 text-xs"
+                                  title="Reset to original price"
+                                >
+                                  🔄
+                                </button>
+                              )}
+                            </div>
                           )}
                         </div>
-                      )}
-                    </div>
 
-                    <p className="text-xs text-gray-500">
-                      Original: ₹{item.product.salePrice} | Stock:{" "}
-                      {item.product.stock} →{" "}
-                      {item.product.stock - item.quantity} | Cost: ₹
-                      {item.product.costPrice}
-                    </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Original: ₹{item.product.salePrice} | Stock:{" "}
+                          {item.product.stock} →{" "}
+                          {item.product.stock - item.quantity} | Cost: ₹
+                          {item.product.costPrice}
+                        </p>
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="flex items-center space-x-4">
+                  <div className="flex items-center justify-between sm:justify-end space-x-4">
                     <div className="flex items-center space-x-2">
                       <button
                         onClick={() => {
@@ -375,11 +461,14 @@ const Sales: React.FC = () => {
                             );
                           }
                         }}
-                        className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center hover:bg-gray-300"
+                        className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center hover:bg-gray-300 transition-colors"
+                        title="Decrease quantity"
                       >
                         -
                       </button>
-                      <span className="font-medium">{item.quantity}</span>
+                      <span className="font-medium w-8 text-center">
+                        {item.quantity}
+                      </span>
                       <button
                         onClick={() => {
                           if (item.quantity < item.product.stock) {
@@ -397,14 +486,24 @@ const Sales: React.FC = () => {
                             alert("Not enough stock available!");
                           }
                         }}
-                        className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center hover:bg-gray-300"
+                        className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center hover:bg-gray-300 transition-colors"
+                        title="Increase quantity"
                       >
                         +
                       </button>
                     </div>
                     <button
-                      onClick={() => removeFromCart(item.product._id)}
-                      className="text-red-600 hover:text-red-800"
+                      onClick={() => {
+                        if (
+                          window.confirm(
+                            `Remove ${item.product.name} from cart?`
+                          )
+                        ) {
+                          removeFromCart(item.product._id);
+                        }
+                      }}
+                      className="text-red-600 hover:text-red-800 p-2 transition-colors"
+                      title="Remove from cart"
                     >
                       🗑️
                     </button>
