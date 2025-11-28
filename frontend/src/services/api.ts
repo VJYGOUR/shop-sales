@@ -13,7 +13,7 @@ export const productAPI = {
     const response = await axiosInstance.get<ApiResponse<Product[]>>(
       "/products"
     );
-    console.log(response.data.data);
+    // console.log(response.data.data);
     return response.data.data || [];
   },
 
@@ -51,7 +51,7 @@ export const productAPI = {
     }
     return response.data.data!;
   },
-    // ADDED: deleteProduct method
+  // ADDED: deleteProduct method
   deleteProduct: async (id: string): Promise<void> => {
     const response = await axiosInstance.delete<ApiResponse<void>>(
       `/products/${id}/delete`

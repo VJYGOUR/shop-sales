@@ -81,3 +81,55 @@ export interface ScanResult {
   product?: Product;
   error?: string;
 }
+export interface DateRange {
+  start: string;
+  end: string;
+}
+
+export interface SalesTrend {
+  date: string;
+  revenue: number;
+  profit: number;
+  quantity: number;
+  orders: number;
+}
+
+export interface ProductPerformance {
+  productName: string;
+  revenue: number;
+  profit: number;
+  quantity: number;
+  profitMargin: number;
+}
+
+export interface ChartData {
+  labels: string[];
+  datasets: {
+    label: string;
+    data: number[];
+    backgroundColor: string;
+    borderColor: string;
+  }[];
+}
+export interface PrintSale {
+  productName: string;
+  date: string;
+  createdAt: string;
+  quantity: number;
+  salePrice: number;
+  totalAmount: number;
+  profit: number;
+}
+
+export interface PrintDateRange {
+  start: string;
+  end: string;
+}
+
+export interface PrintSummaryStats {
+  totalRevenue: number;
+  totalProfit: number;
+  totalSales: number;
+  totalQuantity: number;
+  avgOrderValue: number;
+}

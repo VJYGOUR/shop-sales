@@ -4,7 +4,7 @@ import { useAuth } from "./AuthContext";
 
 const ProtectedRoute: React.FC = () => {
   const { user, loading } = useAuth();
-  console.log(user);
+  // console.log(user);
 
   // Show loading state while checking auth
   if (loading)
