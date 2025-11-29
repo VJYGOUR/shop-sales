@@ -276,71 +276,40 @@ export const refreshToken = async (req, res) => {
 };
 
 export const me = async (req, res) => {
-  console.log("🔐 Me endpoint executed");
+  console.log(
+    "🔐 Me endpoint executed - User from middleware:",
+    req.user?.email
+  );
 
   try {
-    const token = req.cookies.accessToken;
-    console.log("📄 Token received:", token ? "Yes" : "No");
-
-    if (!token) {
-      console.log("❌ No token provided");
+    // ✅ SIMPLIFY - user is already attached by protect middleware
+    if (!req.user) {
+      console.log("❌ No user in request");
       return res.status(401).json({
         success: false,
         message: "Not authenticated",
       });
     }
 
-    // Verify the token
-    const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
-    console.log("✅ Token decoded for user:", decoded.userId);
-
-    // Get full user data from database (excluding password)
-    const user = await User.findById(decoded.userId).select("-password");
-
-    if (!user) {
-      console.log("❌ User not found in database");
-      return res.status(401).json({
-        success: false,
-        message: "User not found",
-      });
-    }
-
-    console.log("✅ User data retrieved:", user.email);
-
+    // ✅ Return user data from protect middleware
     res.json({
       success: true,
       user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        isEmailVerified: user.isEmailVerified,
-        role: user.role,
-        phoneNumber: user.phoneNumber,
-        // ADD THESE TWO LINES:
-        plan: user.plan || "free", // Default to 'free' if not set
-        businessName: user.businessName || user.name + "'s Business",
-        profileImage: user.profileImage || null, // Default if not set
-        subscriptionId: user.subscriptionId,
-        subscriptionStatus: user.subscriptionStatus,
+        id: req.user._id,
+        name: req.user.name,
+        email: req.user.email,
+        isEmailVerified: req.user.isEmailVerified,
+        role: req.user.role,
+        phoneNumber: req.user.phoneNumber,
+        plan: req.user.plan || "free",
+        businessName: req.user.businessName || req.user.name + "'s Business",
+        profileImage: req.user.profileImage || null,
+        subscriptionId: req.user.subscriptionId,
+        subscriptionStatus: req.user.subscriptionStatus,
       },
     });
   } catch (err) {
-    console.error("❌ Token verification error:", err.message);
-
-    if (err.name === "TokenExpiredError") {
-      return res.status(401).json({
-        success: false,
-        message: "Token expired",
-      });
-    }
-
-    if (err.name === "JsonWebTokenError") {
-      return res.status(401).json({
-        success: false,
-        message: "Invalid token",
-      });
-    }
-
+    console.error("❌ Me endpoint error:", err.message);
     res.status(500).json({
       success: false,
       message: "Server error",
