@@ -84,58 +84,77 @@ const Signup = () => {
   );
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4">
-      <div className="w-full max-w-md">
-        <div className="bg-white/80 backdrop-blur-sm shadow-xl rounded-2xl p-8 space-y-8 border border-white/60 transition-all duration-300 hover:shadow-2xl">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4 relative overflow-hidden">
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute -top-1/4 -right-1/4 w-1/2 h-1/2 bg-cyan-500/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute -bottom-1/4 -left-1/4 w-1/2 h-1/2 bg-purple-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl animate-pulse delay-500"></div>
+      </div>
+
+      <div className="w-full max-w-md relative z-10">
+        {/* Card Container */}
+        <div className="bg-white/5 backdrop-blur-xl shadow-2xl rounded-3xl p-8 space-y-8 border border-white/10 hover:border-cyan-400/30 transition-all duration-500 hover:shadow-cyan-500/10 group">
+          {/* Floating Elements */}
+          <div className="absolute -top-2 -right-2 w-4 h-4 bg-cyan-400 rounded-full animate-ping"></div>
+          <div className="absolute -bottom-2 -left-2 w-3 h-3 bg-purple-400 rounded-full animate-pulse delay-700"></div>
+
           {/* Header */}
-          <div className="text-center space-y-2">
-            <div className="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center mx-auto mb-4">
-              <svg
-                className="w-6 h-6 text-white"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"
-                />
-              </svg>
+          <div className="text-center space-y-4">
+            <div className="relative">
+              <div className="w-16 h-16 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg group-hover:scale-110 transition-transform duration-500">
+                <svg
+                  className="w-8 h-8 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"
+                  />
+                </svg>
+              </div>
+              <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-2xl opacity-0 group-hover:opacity-20 blur transition-opacity duration-500"></div>
             </div>
-            <h2 className="text-3xl font-bold text-gray-900">Create Account</h2>
-            <p className="text-gray-600 text-sm">
-              Join Stoq to manage your business
-            </p>
+            <div>
+              <h2 className="text-3xl font-bold text-white mb-2">Join Stoq</h2>
+              <p className="text-cyan-200 text-sm">
+                Start your 14-day free trial. No credit card required.
+              </p>
+            </div>
           </div>
 
           {/* Messages */}
           <div className="space-y-3">
             {successMessage && (
-              <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-xl text-sm transition-all duration-300 animate-fadeIn">
+              <div className="bg-emerald-500/20 backdrop-blur-sm border border-emerald-400/30 text-emerald-200 px-4 py-3 rounded-xl text-sm transition-all duration-500 animate-fadeIn shadow-lg">
                 <div className="flex items-center">
-                  <svg
-                    className="w-4 h-4 mr-2"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  {successMessage}
+                  <div className="w-5 h-5 bg-emerald-400 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                    <svg
+                      className="w-3 h-3 text-white"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                  <span className="font-medium">{successMessage}</span>
                 </div>
                 {successMessage.includes("check your email") && (
-                  <div className="mt-2 pl-6">
-                    <p className="text-emerald-600 text-xs">
+                  <div className="mt-3 pl-8 border-t border-emerald-400/20 pt-3">
+                    <p className="text-emerald-300 text-xs mb-2">
                       Didn't receive the email? Check your spam folder.
                     </p>
                     <button
                       onClick={() => navigate("/login")}
-                      className="mt-1 text-emerald-700 hover:text-emerald-800 underline text-xs font-medium"
+                      className="text-emerald-400 hover:text-emerald-300 underline text-xs font-medium transition-colors duration-200"
                     >
                       Go to Login
                     </button>
@@ -145,20 +164,22 @@ const Signup = () => {
             )}
 
             {errorMessage && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm transition-all duration-300 animate-fadeIn">
+              <div className="bg-red-500/20 backdrop-blur-sm border border-red-400/30 text-red-200 px-4 py-3 rounded-xl text-sm transition-all duration-500 animate-fadeIn shadow-lg">
                 <div className="flex items-center">
-                  <svg
-                    className="w-4 h-4 mr-2"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  {errorMessage}
+                  <div className="w-5 h-5 bg-red-400 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                    <svg
+                      className="w-3 h-3 text-white"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                  <span className="font-medium">{errorMessage}</span>
                 </div>
               </div>
             )}
@@ -166,14 +187,14 @@ const Signup = () => {
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             {/* Name Field */}
-            <div className="space-y-2">
+            <div className="space-y-3">
               <label
                 htmlFor="name"
-                className="block text-sm font-medium text-gray-700"
+                className="block text-sm font-medium text-cyan-200"
               >
                 Full Name
               </label>
-              <div className="relative">
+              <div className="relative group">
                 <input
                   type="text"
                   id="name"
@@ -183,12 +204,12 @@ const Signup = () => {
                     maxLength: { value: 50, message: "Max 50 characters" },
                   })}
                   placeholder="Enter your full name"
-                  className="block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 placeholder-gray-400 disabled:bg-gray-50 disabled:cursor-not-allowed"
+                  className="block w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl shadow-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all duration-300 placeholder-cyan-200/50 disabled:bg-white/5 disabled:cursor-not-allowed text-white backdrop-blur-sm group-hover:border-cyan-400/30"
                   disabled={isLoading}
                 />
                 <div className="absolute inset-y-0 right-0 flex items-center pr-3">
                   <svg
-                    className="w-5 h-5 text-gray-400"
+                    className="w-5 h-5 text-cyan-400/70 group-hover:text-cyan-400 transition-colors duration-300"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -203,9 +224,9 @@ const Signup = () => {
                 </div>
               </div>
               {errors.name && (
-                <p className="text-sm text-red-600 animate-fadeIn flex items-center">
+                <p className="text-sm text-red-400 animate-fadeIn flex items-center">
                   <svg
-                    className="w-4 h-4 mr-1"
+                    className="w-4 h-4 mr-2"
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
@@ -221,14 +242,14 @@ const Signup = () => {
             </div>
 
             {/* Email Field */}
-            <div className="space-y-2">
+            <div className="space-y-3">
               <label
                 htmlFor="email"
-                className="block text-sm font-medium text-gray-700"
+                className="block text-sm font-medium text-cyan-200"
               >
                 Email Address
               </label>
-              <div className="relative">
+              <div className="relative group">
                 <input
                   type="email"
                   id="email"
@@ -240,12 +261,12 @@ const Signup = () => {
                     },
                   })}
                   placeholder="Enter your email"
-                  className="block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 placeholder-gray-400 disabled:bg-gray-50 disabled:cursor-not-allowed"
+                  className="block w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl shadow-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all duration-300 placeholder-cyan-200/50 disabled:bg-white/5 disabled:cursor-not-allowed text-white backdrop-blur-sm group-hover:border-cyan-400/30"
                   disabled={isLoading}
                 />
                 <div className="absolute inset-y-0 right-0 flex items-center pr-3">
                   <svg
-                    className="w-5 h-5 text-gray-400"
+                    className="w-5 h-5 text-cyan-400/70 group-hover:text-cyan-400 transition-colors duration-300"
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
@@ -255,9 +276,9 @@ const Signup = () => {
                 </div>
               </div>
               {errors.email && (
-                <p className="text-sm text-red-600 animate-fadeIn flex items-center">
+                <p className="text-sm text-red-400 animate-fadeIn flex items-center">
                   <svg
-                    className="w-4 h-4 mr-1"
+                    className="w-4 h-4 mr-2"
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
@@ -273,14 +294,14 @@ const Signup = () => {
             </div>
 
             {/* Password Field */}
-            <div className="space-y-2">
+            <div className="space-y-3">
               <label
                 htmlFor="password"
-                className="block text-sm font-medium text-gray-700"
+                className="block text-sm font-medium text-cyan-200"
               >
                 Password
               </label>
-              <div className="relative">
+              <div className="relative group">
                 <input
                   type="password"
                   id="password"
@@ -294,12 +315,12 @@ const Signup = () => {
                     },
                   })}
                   placeholder="Enter your password"
-                  className="block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 placeholder-gray-400 disabled:bg-gray-50 disabled:cursor-not-allowed"
+                  className="block w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl shadow-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all duration-300 placeholder-cyan-200/50 disabled:bg-white/5 disabled:cursor-not-allowed text-white backdrop-blur-sm group-hover:border-cyan-400/30"
                   disabled={isLoading}
                 />
                 <div className="absolute inset-y-0 right-0 flex items-center pr-3">
                   <svg
-                    className="w-5 h-5 text-gray-400"
+                    className="w-5 h-5 text-cyan-400/70 group-hover:text-cyan-400 transition-colors duration-300"
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
@@ -312,9 +333,9 @@ const Signup = () => {
                 </div>
               </div>
               {errors.password && (
-                <p className="text-sm text-red-600 animate-fadeIn flex items-center">
+                <p className="text-sm text-red-400 animate-fadeIn flex items-center">
                   <svg
-                    className="w-4 h-4 mr-1"
+                    className="w-4 h-4 mr-2"
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
@@ -330,14 +351,14 @@ const Signup = () => {
             </div>
 
             {/* Confirm Password Field */}
-            <div className="space-y-2">
+            <div className="space-y-3">
               <label
                 htmlFor="confirmPassword"
-                className="block text-sm font-medium text-gray-700"
+                className="block text-sm font-medium text-cyan-200"
               >
                 Confirm Password
               </label>
-              <div className="relative">
+              <div className="relative group">
                 <input
                   type="password"
                   id="confirmPassword"
@@ -347,12 +368,12 @@ const Signup = () => {
                       value === password || "Passwords do not match",
                   })}
                   placeholder="Confirm your password"
-                  className="block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 placeholder-gray-400 disabled:bg-gray-50 disabled:cursor-not-allowed"
+                  className="block w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl shadow-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all duration-300 placeholder-cyan-200/50 disabled:bg-white/5 disabled:cursor-not-allowed text-white backdrop-blur-sm group-hover:border-cyan-400/30"
                   disabled={isLoading}
                 />
                 <div className="absolute inset-y-0 right-0 flex items-center pr-3">
                   <svg
-                    className="w-5 h-5 text-gray-400"
+                    className="w-5 h-5 text-cyan-400/70 group-hover:text-cyan-400 transition-colors duration-300"
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
@@ -365,9 +386,9 @@ const Signup = () => {
                 </div>
               </div>
               {errors.confirmPassword && (
-                <p className="text-sm text-red-600 animate-fadeIn flex items-center">
+                <p className="text-sm text-red-400 animate-fadeIn flex items-center">
                   <svg
-                    className="w-4 h-4 mr-1"
+                    className="w-4 h-4 mr-2"
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
@@ -386,17 +407,18 @@ const Signup = () => {
             <button
               type="submit"
               disabled={isLoading || isSubmitting}
-              className="w-full py-3 px-4 bg-indigo-600 text-white font-medium rounded-xl shadow-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+              className="w-full py-4 px-4 bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-semibold rounded-xl shadow-2xl hover:shadow-cyan-500/25 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-slate-900 transition-all duration-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-3 group relative overflow-hidden hover:scale-105"
             >
+              <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-white/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
               {isLoading ? (
                 <>
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span>Creating Account...</span>
+                  <span className="relative">Creating Account...</span>
                 </>
               ) : (
                 <>
                   <svg
-                    className="w-5 h-5"
+                    className="w-5 h-5 relative"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -408,46 +430,48 @@ const Signup = () => {
                       d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"
                     />
                   </svg>
-                  <span>Create Account</span>
+                  <span className="relative">Create Account</span>
                 </>
               )}
             </button>
           </form>
 
           {/* Footer */}
-          <div className="text-center pt-6 border-t border-gray-200">
-            <p className="text-sm text-gray-600">
+          <div className="text-center pt-6 border-t border-white/10">
+            <p className="text-sm text-cyan-200">
               Already have an account?{" "}
               <Link
                 to="/login"
-                className="text-indigo-600 hover:text-indigo-700 font-medium transition-colors duration-200"
+                className="text-cyan-400 hover:text-cyan-300 font-semibold transition-all duration-300 hover:underline"
               >
                 Sign in here
               </Link>
             </p>
           </div>
 
-          {/* Email verification info */}
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-            <div className="flex items-start space-x-2">
-              <svg
-                className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                  clipRule="evenodd"
-                />
-              </svg>
+          {/* Enhanced Email verification info */}
+          <div className="bg-cyan-500/10 backdrop-blur-sm border border-cyan-400/20 rounded-xl p-4 group hover:border-cyan-400/30 transition-all duration-300">
+            <div className="flex items-start space-x-3">
+              <div className="w-5 h-5 bg-cyan-400 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                <svg
+                  className="w-3 h-3 text-white"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </div>
               <div>
-                <p className="text-sm text-blue-700">
-                  You'll receive a verification email to activate your account
-                  before logging in.
+                <p className="text-sm text-cyan-200 font-medium">
+                  Verify your email to get started
                 </p>
-                <p className="text-xs text-blue-600 mt-1">
-                  Check your spam folder if you don't see it within 5 minutes.
+                <p className="text-xs text-cyan-300 mt-1">
+                  We'll send you a verification link to activate your account
+                  and unlock all features.
                 </p>
               </div>
             </div>

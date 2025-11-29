@@ -87,8 +87,8 @@ export const signup = async (req, res) => {
 };
 
 export const login = async (req, res) => {
-  const { email, password } = req.body;
-  console.log(email, password);
+  const { email, password, rememberMe = false } = req.body;
+  console.log(email, password, rememberMe);
   try {
     if (!email || !password) {
       return res.status(400).json({ message: "enter email and password" });
@@ -113,7 +113,7 @@ export const login = async (req, res) => {
     const { accessToken, refreshToken } = generateToken(user._id);
     // Store refresh token
     await storeRefreshToken(user._id, refreshToken);
-    setCookies(res, accessToken, refreshToken);
+    setCookies(res, accessToken, refreshToken, rememberMe);
     res.status(200).json({
       _id: user._id,
       name: user.name,
