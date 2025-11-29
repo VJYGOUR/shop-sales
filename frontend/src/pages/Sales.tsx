@@ -21,7 +21,7 @@ const Sales: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
 
-  // NEW — Autocomplete state
+  // Autocomplete state
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [suggestions, setSuggestions] = useState<Product[]>([]);
   const searchRef = useRef<HTMLDivElement>(null);
@@ -59,7 +59,7 @@ const Sales: React.FC = () => {
     );
 
     setFilteredProducts(filtered);
-    setSuggestions(filtered.slice(0, 8)); // Show only top 8 like Google
+    setSuggestions(filtered.slice(0, 8));
     setShowSuggestions(true);
   }, [searchTerm, products]);
 
@@ -215,359 +215,397 @@ const Sales: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">Loading...</div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="text-lg text-cyan-200 font-medium">
+            Loading POS...
+          </div>
+          <div className="text-sm text-cyan-400 mt-2">
+            Getting your products ready
+          </div>
+        </div>
+      </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-white p-6 rounded-lg shadow-sm">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">
-          Point of Sale
-        </h1>
-        <p className="text-gray-600">Scan barcodes to sell products</p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4 sm:p-6">
+      {/* Animated Background */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-1/4 -right-1/4 w-1/2 h-1/2 bg-cyan-500/5 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute -bottom-1/4 -left-1/4 w-1/2 h-1/2 bg-purple-500/5 rounded-full blur-3xl animate-pulse delay-1000"></div>
       </div>
 
-      {/* Scanner Section */}
-      <div className="bg-white p-6 rounded-lg shadow-sm">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
-          <div>
-            <h2 className="text-lg font-semibold text-gray-800">
-              Barcode Scanner
-            </h2>
-            <p className="text-gray-600">Scan products to add to cart</p>
-          </div>
-          <button
-            onClick={() => setShowScanner(true)}
-            className="mt-4 sm:mt-0 bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
-          >
-            📱 Scan Product
-          </button>
+      <div className="max-w-7xl mx-auto space-y-6 relative z-10">
+        {/* Header */}
+        <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 shadow-2xl border border-white/10">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
+            Point of Sale
+          </h1>
+          <p className="text-gray-300 mt-2">
+            Scan barcodes to sell products quickly
+          </p>
         </div>
 
-        {/* Search + Google Autocomplete */}
-        <div className="space-y-4" ref={searchRef}>
-          <div className="relative">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Search Products:
-            </label>
-
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search by name, SKU, or category..."
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              onFocus={() => searchTerm && setShowSuggestions(true)}
-            />
-
-            {/* GOOGLE-STYLE AUTOCOMPLETE */}
-            {showSuggestions && suggestions.length > 0 && (
-              <ul className="absolute left-0 right-0 mt-1 bg-white border rounded-lg shadow-xl z-50 max-h-64 overflow-y-auto">
-                {suggestions.map((product) => (
-                  <li
-                    key={product._id}
-                    onClick={() => {
-                      addToCart(product);
-                      setSearchTerm("");
-                      setShowSuggestions(false);
-                    }}
-                    className="px-4 py-3 hover:bg-gray-100 cursor-pointer flex justify-between"
-                  >
-                    <span>{product.name}</span>
-                    <span className="text-gray-500 text-sm">
-                      ₹{product.salePrice}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-
-            {searchTerm && (
-              <p className="text-sm text-gray-500 mt-1">
-                Found {filteredProducts.length} product
-                {filteredProducts.length !== 1 ? "s" : ""}
+        {/* Scanner Section */}
+        <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 shadow-2xl border border-white/10">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-6">
+            <div className="space-y-2">
+              <h2 className="text-xl font-bold text-white">Barcode Scanner</h2>
+              <p className="text-gray-300">
+                Scan products to add to cart instantly
               </p>
+            </div>
+            <button
+              onClick={() => setShowScanner(true)}
+              className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg hover:shadow-cyan-500/25 hover:scale-105 transition-all duration-300 shadow-lg"
+            >
+              📱 Scan Product
+            </button>
+          </div>
+
+          {/* Search + Autocomplete */}
+          <div className="space-y-6" ref={searchRef}>
+            <div className="relative">
+              <label className="block text-sm font-medium text-cyan-300 mb-3">
+                Search Products
+              </label>
+
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search by name, SKU, or category..."
+                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all duration-300"
+                onFocus={() => searchTerm && setShowSuggestions(true)}
+              />
+
+              {/* Autocomplete Suggestions */}
+              {showSuggestions && suggestions.length > 0 && (
+                <ul className="absolute left-0 right-0 mt-2 bg-slate-800 border border-white/10 rounded-xl shadow-2xl z-50 max-h-64 overflow-y-auto">
+                  {suggestions.map((product) => (
+                    <li
+                      key={product._id}
+                      onClick={() => {
+                        addToCart(product);
+                        setSearchTerm("");
+                        setShowSuggestions(false);
+                      }}
+                      className="px-4 py-3 hover:bg-white/5 cursor-pointer flex justify-between items-center border-b border-white/5 last:border-b-0"
+                    >
+                      <span className="text-white">{product.name}</span>
+                      <span className="text-cyan-400 text-sm font-medium">
+                        ₹{product.salePrice}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              {searchTerm && (
+                <p className="text-sm text-cyan-400 mt-2">
+                  Found {filteredProducts.length} product
+                  {filteredProducts.length !== 1 ? "s" : ""}
+                </p>
+              )}
+            </div>
+
+            {/* Manual Selection */}
+            <div>
+              <label className="block text-sm font-medium text-cyan-300 mb-3">
+                Select product manually
+              </label>
+              <select
+                onChange={(e) => {
+                  const product = products.find(
+                    (p) => p._id === e.target.value
+                  );
+                  if (product) {
+                    addToCart(product);
+                    setSearchTerm("");
+                  }
+                }}
+                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all duration-300"
+              >
+                <option value="" className="bg-slate-800">
+                  Select a product...
+                </option>
+                {filteredProducts.map((product) => (
+                  <option
+                    key={product._id}
+                    value={product._id}
+                    disabled={product.stock === 0}
+                    className="bg-slate-800"
+                  >
+                    {product.name} - ₹{product.salePrice}{" "}
+                    {product.stock === 0
+                      ? "(Out of Stock)"
+                      : `(${product.stock} available)`}{" "}
+                    {product.sku && ` - SKU: ${product.sku}`}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Quick Add Buttons */}
+            {filteredProducts.length > 0 && filteredProducts.length <= 10 && (
+              <div>
+                <label className="block text-sm font-medium text-cyan-300 mb-3">
+                  Quick Add
+                </label>
+                <div className="flex flex-wrap gap-3">
+                  {filteredProducts.slice(0, 6).map((product) => (
+                    <button
+                      key={product._id}
+                      onClick={() => {
+                        addToCart(product);
+                        setSearchTerm("");
+                      }}
+                      disabled={product.stock === 0}
+                      className={`px-4 py-2 text-sm rounded-xl border transition-all duration-300 ${
+                        product.stock === 0
+                          ? "bg-gray-800/50 text-gray-500 border-gray-600 cursor-not-allowed"
+                          : "bg-cyan-600/20 text-cyan-300 border-cyan-500/30 hover:bg-cyan-600/30 hover:border-cyan-400 hover:scale-105"
+                      }`}
+                    >
+                      {product.name}{" "}
+                      {product.stock > 0 && (
+                        <span className="ml-1 text-xs opacity-75">
+                          ({product.stock})
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
             )}
           </div>
-
-          {/* Manual Selection */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Select product manually:
-            </label>
-            <select
-              onChange={(e) => {
-                const product = products.find((p) => p._id === e.target.value);
-                if (product) {
-                  addToCart(product);
-                  setSearchTerm("");
-                }
-              }}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="">Select a product...</option>
-              {filteredProducts.map((product) => (
-                <option
-                  key={product._id}
-                  value={product._id}
-                  disabled={product.stock === 0}
-                >
-                  {product.name} - ₹{product.salePrice}{" "}
-                  {product.stock === 0
-                    ? "(Out of Stock)"
-                    : `(${product.stock} available)`}{" "}
-                  {product.sku && ` - SKU: ${product.sku}`}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Quick Add Buttons */}
-          {filteredProducts.length > 0 && filteredProducts.length <= 10 && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Quick Add:
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {filteredProducts.slice(0, 6).map((product) => (
-                  <button
-                    key={product._id}
-                    onClick={() => {
-                      addToCart(product);
-                      setSearchTerm("");
-                    }}
-                    disabled={product.stock === 0}
-                    className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
-                      product.stock === 0
-                        ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
-                        : "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 hover:border-blue-300"
-                    }`}
-                  >
-                    {product.name}{" "}
-                    {product.stock > 0 && (
-                      <span className="ml-1 text-xs">({product.stock})</span>
-                    )}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
-      </div>
 
-      {/* ------ CART + TOTALS + SCANNER MODAL (UNCHANGED) ------ */}
-      {/* (Your full cart code continues exactly as before — unchanged) */}
+        {/* Shopping Cart */}
+        <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 shadow-2xl border border-white/10">
+          <h2 className="text-xl font-bold text-white mb-6">
+            Shopping Cart ({cart.length} {cart.length === 1 ? "item" : "items"})
+          </h2>
 
-      {/* Shopping Cart */}
-      <div className="bg-white p-6 rounded-lg shadow-sm">
-        <h2 className="text-lg font-semibold text-gray-800 mb-4">
-          Shopping Cart ({cart.length} {cart.length === 1 ? "item" : "items"})
-        </h2>
+          {cart.length === 0 ? (
+            <div className="text-center py-12 bg-white/5 rounded-xl border border-white/10">
+              <div className="text-6xl mb-4 opacity-50">🛒</div>
+              <p className="text-gray-400 text-lg mb-2">Cart is empty</p>
+              <p className="text-gray-500 text-sm">
+                Scan products or select manually to get started
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {cart.map((item, index) => {
+                const itemPrice = getItemPrice(item);
+                const itemTotal = getItemTotal(item);
+                const isCustomPrice = item.customPrice !== undefined;
 
-        {cart.length === 0 ? (
-          <div className="text-center py-8 bg-gray-50 rounded-lg">
-            <div className="text-4xl mb-4">🛒</div>
-            <p className="text-gray-600">Cart is empty</p>
-            <p className="text-gray-500 text-sm">
-              Scan products or select manually
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {cart.map((item, index) => {
-              const itemPrice = getItemPrice(item);
-              const itemTotal = getItemTotal(item);
-              const isCustomPrice = item.customPrice !== undefined;
-
-              return (
-                <div
-                  key={`${item.product._id}-${index}`}
-                  className="flex flex-col sm:flex-row sm:justify-between sm:items-center p-4 border border-gray-200 rounded-lg gap-3"
-                >
-                  <div className="flex-1">
-                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between">
-                      <div>
-                        <p className="font-medium text-gray-800">
-                          {item.product.name}
-                          {isCustomPrice && (
-                            <span className="ml-2 text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
-                              CUSTOM PRICE
-                            </span>
-                          )}
-                        </p>
-
-                        <div className="flex items-center space-x-2 mt-1">
-                          {editingPrice === item.product._id ? (
-                            <div className="flex items-center space-x-2">
-                              <input
-                                type="number"
-                                value={tempPrice}
-                                onChange={(e) => setTempPrice(e.target.value)}
-                                className="w-24 px-2 py-1 border border-gray-300 rounded text-sm"
-                                autoFocus
-                              />
-                              <button
-                                onClick={() => savePrice(item.product._id)}
-                                className="text-green-600 hover:text-green-800 text-sm"
-                              >
-                                ✅
-                              </button>
-                              <button
-                                onClick={cancelEditPrice}
-                                className="text-red-600 hover:text-red-800 text-sm"
-                              >
-                                ❌
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="flex items-center space-x-2">
-                              <span className="text-sm text-gray-600">
-                                ₹{itemPrice.toFixed(2)} × {item.quantity} = ₹
-                                {itemTotal.toFixed(2)}
-                              </span>
-                              <button
-                                onClick={() =>
-                                  startEditPrice(item.product._id, itemPrice)
-                                }
-                                className="text-blue-600 hover:text-blue-800 text-xs"
-                              >
-                                ✏️
-                              </button>
+                return (
+                  <div
+                    key={`${item.product._id}-${index}`}
+                    className="bg-white/5 border border-white/10 rounded-xl p-4 hover:border-cyan-500/30 transition-all duration-300"
+                  >
+                    <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4">
+                      <div className="flex-1 space-y-3">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <p className="font-semibold text-white text-lg">
+                              {item.product.name}
                               {isCustomPrice && (
-                                <button
-                                  onClick={() =>
-                                    setCart(
-                                      cart.map((cartItem) =>
-                                        cartItem.product._id ===
-                                        item.product._id
-                                          ? {
-                                              ...cartItem,
-                                              customPrice: undefined,
-                                            }
-                                          : cartItem
+                                <span className="ml-3 text-xs bg-amber-500/20 text-amber-300 px-2 py-1 rounded-full">
+                                  CUSTOM PRICE
+                                </span>
+                              )}
+                            </p>
+
+                            <div className="flex items-center space-x-3 mt-2">
+                              {editingPrice === item.product._id ? (
+                                <div className="flex items-center space-x-3">
+                                  <input
+                                    type="number"
+                                    value={tempPrice}
+                                    onChange={(e) =>
+                                      setTempPrice(e.target.value)
+                                    }
+                                    className="w-28 px-3 py-2 bg-white/5 border border-cyan-500/50 rounded-lg text-white text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                                    autoFocus
+                                  />
+                                  <button
+                                    onClick={() => savePrice(item.product._id)}
+                                    className="text-green-400 hover:text-green-300 text-lg transition-colors"
+                                  >
+                                    ✅
+                                  </button>
+                                  <button
+                                    onClick={cancelEditPrice}
+                                    className="text-red-400 hover:text-red-300 text-lg transition-colors"
+                                  >
+                                    ❌
+                                  </button>
+                                </div>
+                              ) : (
+                                <div className="flex items-center space-x-3">
+                                  <span className="text-cyan-300 font-medium">
+                                    ₹{itemPrice.toFixed(2)} × {item.quantity} =
+                                    ₹{itemTotal.toFixed(2)}
+                                  </span>
+                                  <button
+                                    onClick={() =>
+                                      startEditPrice(
+                                        item.product._id,
+                                        itemPrice
                                       )
-                                    )
-                                  }
-                                  className="text-gray-600 hover:text-gray-800 text-xs"
-                                >
-                                  🔄
-                                </button>
+                                    }
+                                    className="text-blue-400 hover:text-blue-300 text-sm transition-colors"
+                                  >
+                                    ✏️ Edit Price
+                                  </button>
+                                  {isCustomPrice && (
+                                    <button
+                                      onClick={() =>
+                                        setCart(
+                                          cart.map((cartItem) =>
+                                            cartItem.product._id ===
+                                            item.product._id
+                                              ? {
+                                                  ...cartItem,
+                                                  customPrice: undefined,
+                                                }
+                                              : cartItem
+                                          )
+                                        )
+                                      }
+                                      className="text-gray-400 hover:text-gray-300 text-sm transition-colors"
+                                    >
+                                      🔄 Reset
+                                    </button>
+                                  )}
+                                </div>
                               )}
                             </div>
-                          )}
+
+                            <p className="text-sm text-gray-400 mt-2">
+                              Original: ₹{item.product.salePrice} | Stock:{" "}
+                              {item.product.stock} →{" "}
+                              {item.product.stock - item.quantity} | Cost: ₹
+                              {item.product.costPrice}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between lg:justify-end space-x-4">
+                        <div className="flex items-center space-x-3">
+                          <button
+                            onClick={() => {
+                              if (item.quantity > 1) {
+                                setCart(
+                                  cart.map((cartItem) =>
+                                    cartItem.product._id === item.product._id
+                                      ? {
+                                          ...cartItem,
+                                          quantity: cartItem.quantity - 1,
+                                        }
+                                      : cartItem
+                                  )
+                                );
+                              }
+                            }}
+                            className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors text-white"
+                          >
+                            -
+                          </button>
+
+                          <span className="font-bold text-white w-8 text-center text-lg">
+                            {item.quantity}
+                          </span>
+
+                          <button
+                            onClick={() => {
+                              if (item.quantity < item.product.stock) {
+                                setCart(
+                                  cart.map((cartItem) =>
+                                    cartItem.product._id === item.product._id
+                                      ? {
+                                          ...cartItem,
+                                          quantity: cartItem.quantity + 1,
+                                        }
+                                      : cartItem
+                                  )
+                                );
+                              } else {
+                                alert("Not enough stock available!");
+                              }
+                            }}
+                            className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors text-white"
+                          >
+                            +
+                          </button>
                         </div>
 
-                        <p className="text-xs text-gray-500 mt-1">
-                          Original: ₹{item.product.salePrice} | Stock:{" "}
-                          {item.product.stock} →{" "}
-                          {item.product.stock - item.quantity} | Cost: ₹
-                          {item.product.costPrice}
-                        </p>
+                        <button
+                          onClick={() => {
+                            if (
+                              window.confirm(
+                                `Remove ${item.product.name} from cart?`
+                              )
+                            ) {
+                              removeFromCart(item.product._id);
+                            }
+                          }}
+                          className="text-red-400 hover:text-red-300 p-2 transition-colors"
+                        >
+                          🗑️
+                        </button>
                       </div>
                     </div>
                   </div>
+                );
+              })}
 
-                  <div className="flex items-center justify-between sm:justify-end space-x-4">
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => {
-                          if (item.quantity > 1) {
-                            setCart(
-                              cart.map((cartItem) =>
-                                cartItem.product._id === item.product._id
-                                  ? {
-                                      ...cartItem,
-                                      quantity: cartItem.quantity - 1,
-                                    }
-                                  : cartItem
-                              )
-                            );
-                          }
-                        }}
-                        className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center hover:bg-gray-300"
-                      >
-                        -
-                      </button>
-
-                      <span className="font-medium w-8 text-center">
-                        {item.quantity}
-                      </span>
-
-                      <button
-                        onClick={() => {
-                          if (item.quantity < item.product.stock) {
-                            setCart(
-                              cart.map((cartItem) =>
-                                cartItem.product._id === item.product._id
-                                  ? {
-                                      ...cartItem,
-                                      quantity: cartItem.quantity + 1,
-                                    }
-                                  : cartItem
-                              )
-                            );
-                          } else {
-                            alert("Not enough stock available!");
-                          }
-                        }}
-                        className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center hover:bg-gray-300"
-                      >
-                        +
-                      </button>
-                    </div>
-
-                    <button
-                      onClick={() => {
-                        if (
-                          window.confirm(
-                            `Remove ${item.product.name} from cart?`
-                          )
-                        ) {
-                          removeFromCart(item.product._id);
-                        }
-                      }}
-                      className="text-red-600 hover:text-red-800 p-2"
-                    >
-                      🗑️
-                    </button>
-                  </div>
+              {/* Totals */}
+              <div className="border-t border-white/10 pt-6 space-y-3">
+                <div className="flex justify-between text-lg">
+                  <span className="text-gray-300">Subtotal:</span>
+                  <span className="font-bold text-white">
+                    ₹{subtotal.toFixed(2)}
+                  </span>
                 </div>
-              );
-            })}
+                <div className="flex justify-between text-lg">
+                  <span className="text-green-400">Estimated Profit:</span>
+                  <span className="font-bold text-green-400">
+                    ₹{totalProfit.toFixed(2)}
+                  </span>
+                </div>
+                <div className="flex justify-between text-xl font-bold border-t border-white/10 pt-3">
+                  <span className="text-white">Total:</span>
+                  <span className="text-cyan-400">₹{subtotal.toFixed(2)}</span>
+                </div>
+              </div>
 
-            <div className="border-t pt-4 space-y-2">
-              <div className="flex justify-between">
-                <span className="font-medium">Subtotal:</span>
-                <span className="font-bold">₹{subtotal.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between text-green-600">
-                <span>Estimated Profit:</span>
-                <span className="font-bold">₹{totalProfit.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between text-lg font-bold border-t pt-2">
-                <span>Total:</span>
-                <span>₹{subtotal.toFixed(2)}</span>
-              </div>
+              {/* Complete Sale Button */}
+              <button
+                onClick={completeSale}
+                className="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white py-4 rounded-xl font-bold text-lg hover:shadow-2xl hover:shadow-green-500/25 hover:scale-105 transition-all duration-300 shadow-lg mt-6"
+              >
+                ✅ Complete Sale - ₹{subtotal.toFixed(2)}
+              </button>
             </div>
+          )}
+        </div>
 
-            <button
-              onClick={completeSale}
-              className="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 mt-4"
-            >
-              ✅ Complete Sale (₹{subtotal.toFixed(2)})
-            </button>
-          </div>
+        {/* Scanner Modal */}
+        {showScanner && (
+          <BarcodeScanner
+            onScan={handleScan}
+            onClose={() => setShowScanner(false)}
+          />
         )}
       </div>
-
-      {showScanner && (
-        <BarcodeScanner
-          onScan={handleScan}
-          onClose={() => setShowScanner(false)}
-        />
-      )}
     </div>
   );
 };

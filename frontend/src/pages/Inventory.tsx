@@ -68,10 +68,19 @@ const Inventory: React.FC = () => {
 
   const getStockStatus = (stock: number) => {
     if (stock === 0)
-      return { status: "Out of Stock", color: "bg-red-100 text-red-800" };
+      return {
+        status: "Out of Stock",
+        color: "bg-red-500/20 text-red-300 border-red-500/30",
+      };
     if (stock <= 5)
-      return { status: "Low Stock", color: "bg-yellow-100 text-yellow-800" };
-    return { status: "In Stock", color: "bg-green-100 text-green-800" };
+      return {
+        status: "Low Stock",
+        color: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
+      };
+    return {
+      status: "In Stock",
+      color: "bg-green-500/20 text-green-300 border-green-500/30",
+    };
   };
 
   const getCategories = () => {
@@ -90,269 +99,301 @@ const Inventory: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="text-lg">Loading inventory...</div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="text-lg text-cyan-200 font-medium">
+            Loading inventory...
+          </div>
+          <div className="text-sm text-cyan-400 mt-2">
+            Counting your products
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-white p-6 rounded-lg shadow-sm">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">
-              Inventory Management
-            </h1>
-            <p className="text-gray-600">
-              Manage your products and stock levels
-            </p>
-          </div>
-          <Link
-            to="/products"
-            className="mt-4 sm:mt-0 bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
-          >
-            Add New Product
-          </Link>
-
-          <button
-            onClick={() =>
-              exportToCSV(formatInventoryForExport(products), "inventory")
-            }
-            className="mt-4 sm:mt-0 bg-green-600 text-white px-4 py-3 rounded-lg font-medium hover:bg-green-700 transition-colors ml-2"
-          >
-            Export CSV
-          </button>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4 sm:p-6">
+      {/* Animated Background */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-1/4 -right-1/4 w-1/2 h-1/2 bg-cyan-500/5 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute -bottom-1/4 -left-1/4 w-1/2 h-1/2 bg-purple-500/5 rounded-full blur-3xl animate-pulse delay-1000"></div>
       </div>
 
-      {/* Inventory Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white p-6 rounded-lg shadow-sm border-l-4 border-blue-500">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-sm font-medium text-gray-600">
-                Total Products
-              </p>
-              <p className="text-2xl font-bold text-gray-800">
-                {products.length}
+      <div className="max-w-7xl mx-auto space-y-6 relative z-10">
+        {/* Header */}
+        <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 shadow-2xl border border-white/10">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div className="space-y-2">
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
+                Inventory Management
+              </h1>
+              <p className="text-gray-300">
+                Manage your products and stock levels
               </p>
             </div>
-            <div className="text-2xl text-blue-500">📦</div>
+            <div className="flex flex-wrap gap-3">
+              <Link
+                to="/products"
+                className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg hover:shadow-cyan-500/25 hover:scale-105 transition-all duration-300 shadow-lg"
+              >
+                Add New Product
+              </Link>
+              <button
+                onClick={() =>
+                  exportToCSV(formatInventoryForExport(products), "inventory")
+                }
+                className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg hover:shadow-green-500/25 hover:scale-105 transition-all duration-300 shadow-lg"
+              >
+                Export CSV
+              </button>
+            </div>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow-sm border-l-4 border-green-500">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-sm font-medium text-gray-600">
-                Inventory Value
-              </p>
-              <p className="text-2xl font-bold text-gray-800">
-                ₹{getTotalInventoryValue().toFixed(2)}
-              </p>
-            </div>
-            <div className="text-2xl text-green-500">💰</div>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg shadow-sm border-l-4 border-yellow-500">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-sm font-medium text-gray-600">
-                Low Stock Items
-              </p>
-              <p className="text-2xl font-bold text-gray-800">
-                {products.filter((p) => p.stock > 0 && p.stock <= 5).length}
-              </p>
-            </div>
-            <div className="text-2xl text-yellow-500">⚠️</div>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg shadow-sm border-l-4 border-red-500">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Out of Stock</p>
-              <p className="text-2xl font-bold text-gray-800">
-                {products.filter((p) => p.stock === 0).length}
-              </p>
-            </div>
-            <div className="text-2xl text-red-500">❌</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Filters */}
-      <div className="bg-white p-6 rounded-lg shadow-sm">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Search Products
-            </label>
-            <input
-              type="text"
-              placeholder="Search by name or SKU..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Category
-            </label>
-            <select
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        {/* Inventory Stats */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            {
+              label: "Total Products",
+              value: products.length,
+              color: "text-blue-400",
+              bg: "bg-blue-500/10",
+              border: "border-blue-500/20",
+              icon: "📦",
+            },
+            {
+              label: "Inventory Value",
+              value: `₹${getTotalInventoryValue().toFixed(2)}`,
+              color: "text-green-400",
+              bg: "bg-green-500/10",
+              border: "border-green-500/20",
+              icon: "💰",
+            },
+            {
+              label: "Low Stock Items",
+              value: products.filter((p) => p.stock > 0 && p.stock <= 5).length,
+              color: "text-yellow-400",
+              bg: "bg-yellow-500/10",
+              border: "border-yellow-500/20",
+              icon: "⚠️",
+            },
+            {
+              label: "Out of Stock",
+              value: products.filter((p) => p.stock === 0).length,
+              color: "text-red-400",
+              bg: "bg-red-500/10",
+              border: "border-red-500/20",
+              icon: "❌",
+            },
+          ].map((stat, index) => (
+            <div
+              key={index}
+              className={`p-4 rounded-xl border backdrop-blur-sm hover:scale-105 transition-all duration-300 ${stat.bg} ${stat.border}`}
             >
-              <option value="all">All Categories</option>
-              {getCategories().map((category) => (
-                <option key={category} value={category}>
-                  {category}
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-xs text-gray-400 uppercase tracking-wide">
+                    {stat.label}
+                  </p>
+                  <p className={`text-xl font-bold ${stat.color} mt-2`}>
+                    {stat.value}
+                  </p>
+                </div>
+                <div className="text-2xl opacity-80">{stat.icon}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Filters */}
+        <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 shadow-2xl border border-white/10">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-cyan-300 mb-3">
+                Search Products
+              </label>
+              <input
+                type="text"
+                placeholder="Search by name or SKU..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all duration-300"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-cyan-300 mb-3">
+                Category
+              </label>
+              <select
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all duration-300"
+              >
+                <option value="all" className="bg-slate-800">
+                  All Categories
                 </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Stock Status
-            </label>
-            <select
-              value={stockFilter}
-              onChange={(e) => setStockFilter(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="all">All Stock</option>
-              <option value="in-stock">In Stock</option>
-              <option value="low-stock">Low Stock</option>
-              <option value="out-of-stock">Out of Stock</option>
-            </select>
-          </div>
-          <div className="flex items-end">
-            <button
-              onClick={() => {
-                setSearchTerm("");
-                setCategoryFilter("all");
-                setStockFilter("all");
-              }}
-              className="w-full bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-200 transition-colors"
-            >
-              Clear Filters
-            </button>
+                {getCategories().map((category) => (
+                  <option
+                    key={category}
+                    value={category}
+                    className="bg-slate-800"
+                  >
+                    {category}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-cyan-300 mb-3">
+                Stock Status
+              </label>
+              <select
+                value={stockFilter}
+                onChange={(e) => setStockFilter(e.target.value)}
+                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all duration-300"
+              >
+                <option value="all" className="bg-slate-800">
+                  All Stock
+                </option>
+                <option value="in-stock" className="bg-slate-800">
+                  In Stock
+                </option>
+                <option value="low-stock" className="bg-slate-800">
+                  Low Stock
+                </option>
+                <option value="out-of-stock" className="bg-slate-800">
+                  Out of Stock
+                </option>
+              </select>
+            </div>
+            <div className="flex items-end">
+              <button
+                onClick={() => {
+                  setSearchTerm("");
+                  setCategoryFilter("all");
+                  setStockFilter("all");
+                }}
+                className="w-full bg-white/10 text-white px-4 py-3 rounded-xl font-medium hover:bg-white/20 transition-all duration-300 border border-white/10"
+              >
+                Clear Filters
+              </button>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Products Table */}
-      <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-          <h3 className="text-lg font-semibold text-gray-800">
-            Products ({filteredProducts.length})
-          </h3>
-          <span className="text-sm text-gray-500">
-            Showing {filteredProducts.length} of {products.length} products
-          </span>
-        </div>
+        {/* Products Table */}
+        <div className="bg-white/5 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/10 overflow-hidden">
+          <div className="px-6 py-4 border-b border-white/10 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+            <h3 className="text-xl font-bold text-white">
+              Products ({filteredProducts.length})
+            </h3>
+            <span className="text-sm text-gray-400">
+              Showing {filteredProducts.length} of {products.length} products
+            </span>
+          </div>
 
-        {filteredProducts.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Product
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Category
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Stock
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Cost Price
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Sale Price
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredProducts.map((product) => {
-                  const stockStatus = getStockStatus(product.stock);
-                  return (
-                    <tr key={product._id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">
-                            {product.name}
-                          </div>
-                          {product.sku && (
-                            <div className="text-sm text-gray-500">
-                              SKU: {product.sku}
+          {filteredProducts.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full divide-y divide-white/10">
+                <thead className="bg-white/5">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider">
+                      Product
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider">
+                      Category
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider">
+                      Stock
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider">
+                      Cost Price
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider">
+                      Sale Price
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider">
+                      Status
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/10">
+                  {filteredProducts.map((product) => {
+                    const stockStatus = getStockStatus(product.stock);
+                    return (
+                      <tr
+                        key={product._id}
+                        className="hover:bg-white/5 transition-colors"
+                      >
+                        <td className="px-4 py-4">
+                          <div>
+                            <div className="text-sm font-medium text-white">
+                              {product.name}
                             </div>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {product.category || "Uncategorized"}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <span className="text-sm font-medium text-gray-900 mr-2">
-                            {product.stock}
+                            {product.sku && (
+                              <div className="text-sm text-gray-400">
+                                SKU: {product.sku}
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-4 py-4 text-sm text-gray-300">
+                          {product.category || "Uncategorized"}
+                        </td>
+                        <td className="px-4 py-4">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-white">
+                              {product.stock}
+                            </span>
+                            {product.stock <= 5 && product.stock > 0 && (
+                              <span className="text-xs text-yellow-300 bg-yellow-500/20 px-2 py-1 rounded-full border border-yellow-500/30">
+                                Low
+                              </span>
+                            )}
+                            {product.stock === 0 && (
+                              <span className="text-xs text-red-300 bg-red-500/20 px-2 py-1 rounded-full border border-red-500/30">
+                                Out
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-4 py-4 text-sm text-gray-300">
+                          ₹{product.costPrice.toFixed(2)}
+                        </td>
+                        <td className="px-4 py-4 text-sm text-gray-300">
+                          ₹{product.salePrice.toFixed(2)}
+                        </td>
+                        <td className="px-4 py-4">
+                          <span
+                            className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${stockStatus.color}`}
+                          >
+                            {stockStatus.status}
                           </span>
-                          {product.stock <= 5 && product.stock > 0 && (
-                            <span className="text-xs text-yellow-600 bg-yellow-100 px-2 py-1 rounded-full">
-                              Low
-                            </span>
-                          )}
-                          {product.stock === 0 && (
-                            <span className="text-xs text-red-600 bg-red-100 px-2 py-1 rounded-full">
-                              Out
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        ₹{product.costPrice.toFixed(2)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        ₹{product.salePrice.toFixed(2)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${stockStatus.color}`}
-                        >
-                          {stockStatus.status}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="text-center py-12">
-            <div className="text-4xl mb-4">📦</div>
-            <p className="text-gray-500 text-lg mb-2">No products found</p>
-            <p className="text-gray-400 mb-4">
-              Try adjusting your search or add new products
-            </p>
-            <Link
-              to="/products"
-              className="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium"
-            >
-              Add Your First Product
-            </Link>
-          </div>
-        )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <div className="text-6xl text-gray-500 mb-4">📦</div>
+              <p className="text-gray-400 text-lg mb-2">No products found</p>
+              <p className="text-gray-500 mb-6">
+                Try adjusting your search or add new products
+              </p>
+              <Link
+                to="/products"
+                className="inline-flex items-center text-cyan-400 hover:text-cyan-300 font-medium transition-colors"
+              >
+                Add Your First Product
+              </Link>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

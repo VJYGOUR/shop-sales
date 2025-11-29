@@ -95,14 +95,14 @@ const Pricing = () => {
       const options: RazorpayOptions = {
         key: import.meta.env.VITE_RAZORPAY_KEY_ID as string,
         subscription_id: subscription.id,
-        name: "Your App Name",
+        name: "Stoq",
         description: `${tier} Plan Subscription`,
         prefill: {
           name: user.name,
           email: user.email,
         },
         theme: {
-          color: "#3b82f6",
+          color: "#06b6d4", // Cyan color
         },
         handler: async (response: RazorpayPaymentResponse) => {
           await axios.post("/billing/verify", response);
@@ -147,16 +147,39 @@ const Pricing = () => {
   };
 
   return (
-    <div className="flex">
-      {/* Main Content */}
-      <div className="flex-1 p-8">
-        <h1 className="text-center my-8 text-3xl text-midnight font-mont font-bold text-gray-500">
-          Our Pricing {user?.name}
-        </h1>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4 sm:p-6">
+      {/* Animated Background */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-1/4 -right-1/4 w-1/2 h-1/2 bg-cyan-500/5 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute -bottom-1/4 -left-1/4 w-1/2 h-1/2 bg-purple-500/5 rounded-full blur-3xl animate-pulse delay-1000"></div>
+      </div>
+
+      <div className="max-w-7xl mx-auto relative z-10">
+        {/* Header */}
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent mb-4">
+            Choose Your Plan
+          </h1>
+          <p className="text-gray-300 text-lg">
+            Scale your business with our flexible pricing plans
+          </p>
+          {user && (
+            <div className="mt-4 inline-flex items-center px-4 py-2 bg-white/5 rounded-xl border border-white/10">
+              <span className="text-cyan-400 font-medium mr-2">Welcome,</span>
+              <span className="text-white">{user.name}</span>
+            </div>
+          )}
+        </div>
 
         {/* Toggle Monthly / Annually */}
-        <div className="flex items-center font-mont gap-4 justify-center mt-10">
-          <span>Annually</span>
+        <div className="flex items-center justify-center gap-6 mb-12">
+          <span
+            className={`text-lg font-semibold ${
+              !isMonthly ? "text-cyan-400" : "text-gray-400"
+            }`}
+          >
+            Annually
+          </span>
           <label className="relative inline-flex items-center cursor-pointer">
             <input
               type="checkbox"
@@ -164,76 +187,154 @@ const Pricing = () => {
               onChange={() => setIsMonthly(!isMonthly)}
               className="sr-only peer"
             />
-            <div className="w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-blue-600 transition"></div>
-            <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition peer-checked:translate-x-5"></div>
+            <div className="w-14 h-7 bg-gray-600 rounded-full peer-checked:bg-cyan-600 transition-all duration-300"></div>
+            <div className="absolute left-1 top-1 w-5 h-5 bg-white rounded-full transition-all duration-300 peer-checked:translate-x-7"></div>
           </label>
-          <span>Monthly</span>
+          <span
+            className={`text-lg font-semibold ${
+              isMonthly ? "text-cyan-400" : "text-gray-400"
+            }`}
+          >
+            Monthly
+          </span>
         </div>
 
         {/* Pricing Cards */}
-        <main className="grid grid-cols-1 md:grid-cols-3 gap-6 justify-items-center mt-10">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
           {priceData.map((curr, i) => {
             const isMiddle = i === 1; // Only middle card is active
+            const price = isMonthly ? curr.monthly : curr.yearly;
+            const usdPrice = (price / INR_TO_USD).toFixed(2);
 
             return (
               <div
                 key={i}
                 className={`
-                  flex flex-col gap-6 divide-y divide-gray-300 
-                  items-center justify-center pt-8 pb-12 w-full max-w-sm rounded-xl
+                  relative backdrop-blur-xl rounded-2xl p-8 border transition-all duration-500
                   ${
                     isMiddle
-                      ? "text-white bg-gradient-to-r from-blue-500 to-blue-700 shadow-lg scale-105 transform transition-all"
-                      : "bg-gray-100 text-gray-400 border border-gray-300 opacity-50 cursor-not-allowed"
+                      ? "bg-gradient-to-br from-cyan-500/10 to-blue-600/10 border-cyan-500/30 shadow-2xl shadow-cyan-500/20 scale-105 hover:scale-110"
+                      : "bg-white/5 border-white/10 hover:border-cyan-500/20 hover:bg-white/10"
                   }
                 `}
               >
-                <span className="font-bold">{curr.tier}</span>
+                {/* Popular Badge for Middle Card - FIXED ALIGNMENT */}
+                {isMiddle && (
+                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 w-full max-w-[90%]">
+                    <div className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg text-center whitespace-nowrap mx-auto">
+                      MOST POPULAR
+                    </div>
+                  </div>
+                )}
 
-                <span className="text-[3.5rem] font-extrabold pb-4">
-                  $
-                  {(
-                    (isMonthly ? curr.monthly : curr.yearly) / INR_TO_USD
-                  ).toFixed(2)}
-                </span>
+                {/* Tier Name */}
+                <div
+                  className={`text-center mb-6 ${
+                    isMiddle ? "text-white" : "text-gray-300"
+                  }`}
+                >
+                  <h3 className="text-2xl font-bold mb-2">{curr.tier}</h3>
+                  <div className="flex items-baseline justify-center gap-1">
+                    <span className="text-4xl font-bold text-cyan-400">
+                      ${usdPrice}
+                    </span>
+                    <span className="text-gray-400">
+                      /{isMonthly ? "month" : "year"}
+                    </span>
+                  </div>
+                </div>
 
-                <span className="pb-4 font-bold">{curr.serviceOne}</span>
-                <span className="pb-4 font-bold">{curr.serviceTwo}</span>
-                <span className="pb-4 font-bold">{curr.serviceThree}</span>
+                {/* Features List */}
+                <div className="space-y-4 mb-8">
+                  <div className="flex items-center space-x-3">
+                    <div
+                      className={`w-5 h-5 rounded-full flex items-center justify-center ${
+                        isMiddle ? "bg-cyan-500" : "bg-gray-600"
+                      }`}
+                    >
+                      <span className="text-white text-xs">✓</span>
+                    </div>
+                    <span className={isMiddle ? "text-white" : "text-gray-300"}>
+                      {curr.serviceOne}
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <div
+                      className={`w-5 h-5 rounded-full flex items-center justify-center ${
+                        isMiddle ? "bg-cyan-500" : "bg-gray-600"
+                      }`}
+                    >
+                      <span className="text-white text-xs">✓</span>
+                    </div>
+                    <span className={isMiddle ? "text-white" : "text-gray-300"}>
+                      {curr.serviceTwo}
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <div
+                      className={`w-5 h-5 rounded-full flex items-center justify-center ${
+                        isMiddle ? "bg-cyan-500" : "bg-gray-600"
+                      }`}
+                    >
+                      <span className="text-white text-xs">✓</span>
+                    </div>
+                    <span className={isMiddle ? "text-white" : "text-gray-300"}>
+                      {curr.serviceThree}
+                    </span>
+                  </div>
+                </div>
 
+                {/* Subscribe Button */}
                 <button
-                  disabled={!isMiddle || loading} // Disable side buttons
+                  disabled={!isMiddle || loading}
                   onClick={() => handleSubscribe(curr.tier)}
                   className={`
-                    font-bold px-14 rounded-lg py-3 transition
+                    w-full py-4 rounded-xl font-bold transition-all duration-300
                     ${
                       isMiddle
-                        ? "bg-white text-blue-600 hover:bg-gray-100"
-                        : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                        ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white hover:shadow-2xl hover:shadow-cyan-500/25 hover:scale-105"
+                        : "bg-white/10 text-gray-400 border border-white/10 cursor-not-allowed"
                     }
+                    ${loading ? "opacity-50 cursor-not-allowed" : ""}
                   `}
                 >
                   {loading && isMiddle
-                    ? "Processing..."
+                    ? "🔄 Processing..."
                     : isMiddle
-                    ? "Subscribe"
-                    : "Unavailable"}
+                    ? "🚀 Get Started"
+                    : "Coming Soon"}
                 </button>
 
-                {/* Cancel button only on active card if subscription exists */}
+                {/* Cancel Subscription Button */}
                 {isMiddle && user?.subscriptionStatus === "active" && (
                   <button
                     onClick={handleCancelSubscription}
                     disabled={loading}
-                    className="mt-4 px-10 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+                    className="w-full mt-4 py-3 bg-red-600/20 text-red-300 border border-red-500/30 rounded-xl font-bold hover:bg-red-600/30 hover:border-red-400/50 transition-all duration-300 disabled:opacity-50"
                   >
-                    {loading ? "Processing..." : "Cancel Subscription"}
+                    {loading ? "🔄 Processing..." : "Cancel Subscription"}
                   </button>
+                )}
+
+                {/* Current Plan Indicator */}
+                {isMiddle && user?.plan === "professional" && (
+                  <div className="mt-4 text-center">
+                    <span className="inline-flex items-center px-3 py-1 bg-green-500/20 text-green-300 rounded-full text-sm border border-green-500/30">
+                      ✅ Current Plan
+                    </span>
+                  </div>
                 )}
               </div>
             );
           })}
-        </main>
+        </div>
+
+        {/* Additional Info */}
+        <div className="text-center mt-12 text-gray-400">
+          <p>
+            All plans include 24/7 support and a 30-day money-back guarantee
+          </p>
+        </div>
       </div>
     </div>
   );

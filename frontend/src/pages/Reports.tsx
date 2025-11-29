@@ -252,285 +252,303 @@ const Reports: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-white p-6 rounded-lg shadow-sm">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">
-              Business Reports
-            </h1>
-            <p className="text-gray-600">
-              Comprehensive analytics and insights
-            </p>
-          </div>
-          <select
-            value={dateRange}
-            onChange={(e) => setDateRange(e.target.value)}
-            className="mt-4 sm:mt-0 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          >
-            <option value="all">All Time</option>
-            <option value="today">Today</option>
-            <option value="week">Last 7 Days</option>
-            <option value="month">This Month</option>
-            <option value="year">This Year</option>
-          </select>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4 sm:p-6">
+      {/* Animated Background */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-1/4 -right-1/4 w-1/2 h-1/2 bg-cyan-500/5 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute -bottom-1/4 -left-1/4 w-1/2 h-1/2 bg-purple-500/5 rounded-full blur-3xl animate-pulse delay-1000"></div>
       </div>
 
-      {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white p-6 rounded-lg shadow-sm border-l-4 border-blue-500">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Total Revenue</p>
-              <p className="text-2xl font-bold text-gray-800">
-                {formatCurrency(reportData.totalSales)}
+      <div className="max-w-7xl mx-auto space-y-6 relative z-10">
+        {/* Header */}
+        <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 shadow-2xl border border-white/10">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div className="space-y-2">
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
+                Business Reports
+              </h1>
+              <p className="text-gray-300">
+                Comprehensive analytics and insights
               </p>
             </div>
-            <div className="text-2xl text-blue-500">💰</div>
+            <select
+              value={dateRange}
+              onChange={(e) => setDateRange(e.target.value)}
+              className="px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all duration-300"
+            >
+              <option value="all" className="bg-slate-800">
+                All Time
+              </option>
+              <option value="today" className="bg-slate-800">
+                Today
+              </option>
+              <option value="week" className="bg-slate-800">
+                Last 7 Days
+              </option>
+              <option value="month" className="bg-slate-800">
+                This Month
+              </option>
+              <option value="year" className="bg-slate-800">
+                This Year
+              </option>
+            </select>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow-sm border-l-4 border-green-500">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Total Profit</p>
-              <p className="text-2xl font-bold text-gray-800">
-                {formatCurrency(reportData.totalProfit)}
-              </p>
+        {/* Key Metrics */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            {
+              label: "Total Revenue",
+              value: formatCurrency(reportData.totalSales),
+              color: "text-blue-400",
+              bg: "bg-blue-500/10",
+              border: "border-blue-500/20",
+              icon: "💰",
+            },
+            {
+              label: "Total Profit",
+              value: formatCurrency(reportData.totalProfit),
+              color: "text-green-400",
+              bg: "bg-green-500/10",
+              border: "border-green-500/20",
+              icon: "📈",
+            },
+            {
+              label: "Avg Sale Value",
+              value: formatCurrency(reportData.avgSaleValue),
+              color: "text-purple-400",
+              bg: "bg-purple-500/10",
+              border: "border-purple-500/20",
+              icon: "📊",
+            },
+            {
+              label: "Products",
+              value: reportData.totalProducts.toString(),
+              color: "text-orange-400",
+              bg: "bg-orange-500/10",
+              border: "border-orange-500/20",
+              icon: "📦",
+            },
+          ].map((stat, index) => (
+            <div
+              key={index}
+              className={`p-4 rounded-xl border backdrop-blur-sm hover:scale-105 transition-all duration-300 ${stat.bg} ${stat.border}`}
+            >
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-xs text-gray-400 uppercase tracking-wide">
+                    {stat.label}
+                  </p>
+                  <p className={`text-lg font-bold ${stat.color} mt-2`}>
+                    {stat.value}
+                  </p>
+                </div>
+                <div className="text-2xl opacity-80">{stat.icon}</div>
+              </div>
             </div>
-            <div className="text-2xl text-green-500">📈</div>
-          </div>
+          ))}
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow-sm border-l-4 border-purple-500">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-sm font-medium text-gray-600">
-                Avg Sale Value
-              </p>
-              <p className="text-2xl font-bold text-gray-800">
-                {formatCurrency(reportData.avgSaleValue)}
-              </p>
+        {/* Charts and Detailed Reports */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Sales Trend */}
+          <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 shadow-2xl border border-white/10">
+            <h3 className="text-xl font-bold text-white mb-6">
+              Sales Trend (Last 7 Days)
+            </h3>
+            <div className="space-y-4">
+              {reportData.salesTrend.map((day, index) => (
+                <div key={index} className="flex items-center justify-between">
+                  <span className="text-sm text-gray-400 w-16">{day.date}</span>
+                  <div className="flex-1 mx-4">
+                    <div className="bg-white/10 rounded-full h-2">
+                      <div
+                        className="bg-gradient-to-r from-cyan-500 to-blue-500 h-2 rounded-full transition-all duration-500"
+                        style={{
+                          width: `${Math.max(
+                            (day.sales /
+                              Math.max(
+                                ...reportData.salesTrend.map(
+                                  (d) => d.sales || 1
+                                )
+                              )) *
+                              100,
+                            5
+                          )}%`,
+                        }}
+                      ></div>
+                    </div>
+                  </div>
+                  <span className="text-sm font-medium text-white w-20 text-right">
+                    {formatCurrency(day.sales)}
+                  </span>
+                </div>
+              ))}
             </div>
-            <div className="text-2xl text-purple-500">📊</div>
           </div>
-        </div>
 
-        <div className="bg-white p-6 rounded-lg shadow-sm border-l-4 border-orange-500">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Products</p>
-              <p className="text-2xl font-bold text-gray-800">
-                {reportData.totalProducts}
-              </p>
-            </div>
-            <div className="text-2xl text-orange-500">📦</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Charts and Detailed Reports */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Sales Trend */}
-        <div className="bg-white p-6 rounded-lg shadow-sm">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">
-            Sales Trend (Last 7 Days)
-          </h3>
-          <div className="space-y-3">
-            {reportData.salesTrend.map((day, index) => (
-              <div key={index} className="flex items-center justify-between">
-                <span className="text-sm text-gray-600 w-16">{day.date}</span>
-                <div className="flex-1 mx-4">
-                  <div className="bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-blue-500 h-2 rounded-full"
-                      style={{
-                        width: `${Math.max(
-                          (day.sales /
-                            Math.max(
-                              ...reportData.salesTrend.map((d) => d.sales || 1)
-                            )) *
-                            100,
-                          5
-                        )}%`,
-                      }}
-                    ></div>
+          {/* Performance Highlights */}
+          <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 shadow-2xl border border-white/10">
+            <h3 className="text-xl font-bold text-white mb-6">
+              Performance Highlights
+            </h3>
+            <div className="space-y-4">
+              {reportData.bestSellingProduct ? (
+                <div className="bg-gradient-to-r from-blue-500/10 to-cyan-500/10 p-4 rounded-xl border border-cyan-500/20">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-cyan-300">
+                        Best Selling Product
+                      </p>
+                      <p className="text-lg font-bold text-white">
+                        {reportData.bestSellingProduct.name}
+                      </p>
+                      <p className="text-sm text-cyan-400">
+                        {reportData.bestSellingProduct.quantity} units sold
+                      </p>
+                    </div>
+                    <div className="text-3xl text-cyan-400">🏆</div>
+                  </div>
+                  <div className="mt-2 text-sm text-cyan-300">
+                    Revenue:{" "}
+                    {formatCurrency(reportData.bestSellingProduct.revenue)}
                   </div>
                 </div>
-                <span className="text-sm font-medium text-gray-900 w-20 text-right">
-                  {formatCurrency(day.sales)}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
+              ) : (
+                <div className="bg-white/5 p-4 rounded-xl border border-white/10 text-center">
+                  <div className="text-3xl mb-2 text-gray-500">📊</div>
+                  <p className="text-gray-400">No sales data available</p>
+                </div>
+              )}
 
-        {/* Best Selling Product */}
-        <div className="bg-white p-6 rounded-lg shadow-sm">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">
-            Performance Highlights
-          </h3>
-          <div className="space-y-4">
-            {reportData.bestSellingProduct ? (
-              <div className="bg-blue-50 p-4 rounded-lg">
+              {/* Profit Margin */}
+              <div className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 p-4 rounded-xl border border-emerald-500/20">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-blue-800">
-                      Best Selling Product
+                    <p className="text-sm font-medium text-emerald-300">
+                      Profit Margin
                     </p>
-                    <p className="text-lg font-bold text-blue-900">
-                      {reportData.bestSellingProduct.name}
-                    </p>
-                    <p className="text-sm text-blue-700">
-                      {reportData.bestSellingProduct.quantity} units sold
+                    <p className="text-lg font-bold text-white">
+                      {reportData.totalSales > 0
+                        ? `${(
+                            (reportData.totalProfit / reportData.totalSales) *
+                            100
+                          ).toFixed(1)}%`
+                        : "0%"}
                     </p>
                   </div>
-                  <div className="text-3xl text-blue-500">🏆</div>
+                  <div className="text-3xl text-emerald-400">💹</div>
                 </div>
-                <div className="mt-2 text-sm text-blue-600">
-                  Revenue:{" "}
-                  {formatCurrency(reportData.bestSellingProduct.revenue)}
-                </div>
-              </div>
-            ) : (
-              <div className="bg-gray-50 p-4 rounded-lg text-center">
-                <div className="text-3xl mb-2">📊</div>
-                <p className="text-gray-600">No sales data available</p>
-              </div>
-            )}
-
-            {/* Profit Margin */}
-            <div className="bg-green-50 p-4 rounded-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-green-800">
-                    Profit Margin
-                  </p>
-                  <p className="text-lg font-bold text-green-900">
-                    {reportData.totalSales > 0
-                      ? `${(
-                          (reportData.totalProfit / reportData.totalSales) *
-                          100
-                        ).toFixed(1)}%`
-                      : "0%"}
-                  </p>
-                </div>
-                <div className="text-3xl text-green-500">💹</div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Additional Insights */}
-      <div className="bg-white p-6 rounded-lg shadow-sm">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">
-          Business Insights
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div className="text-center p-4 bg-gray-50 rounded-lg">
-            <div className="text-2xl font-bold text-gray-800">
-              {reportData.totalSales > 0
-                ? Math.round(
-                    (reportData.totalProfit / reportData.totalSales) * 100
-                  )
-                : 0}
-              %
+        {/* Business Insights */}
+        <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 shadow-2xl border border-white/10">
+          <h3 className="text-xl font-bold text-white mb-6">
+            Business Insights
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="text-center p-4 bg-white/5 rounded-xl border border-white/10">
+              <div className="text-2xl font-bold text-cyan-400">
+                {reportData.totalSales > 0
+                  ? Math.round(
+                      (reportData.totalProfit / reportData.totalSales) * 100
+                    )
+                  : 0}
+                %
+              </div>
+              <div className="text-sm text-gray-400">Gross Margin</div>
             </div>
-            <div className="text-sm text-gray-600">Gross Margin</div>
-          </div>
-          <div className="text-center p-4 bg-gray-50 rounded-lg">
-            <div className="text-2xl font-bold text-gray-800">
-              {reportData.avgSaleValue > 0
-                ? Math.round(reportData.totalSales / reportData.avgSaleValue)
-                : 0}
+            <div className="text-center p-4 bg-white/5 rounded-xl border border-white/10">
+              <div className="text-2xl font-bold text-purple-400">
+                {reportData.avgSaleValue > 0
+                  ? Math.round(reportData.totalSales / reportData.avgSaleValue)
+                  : 0}
+              </div>
+              <div className="text-sm text-gray-400">Total Transactions</div>
             </div>
-            <div className="text-sm text-gray-600">Total Transactions</div>
-          </div>
-          <div className="text-center p-4 bg-gray-50 rounded-lg">
-            <div className="text-2xl font-bold text-gray-800">
-              {formatCurrency(reportData.totalProfit / 30)}
+            <div className="text-center p-4 bg-white/5 rounded-xl border border-white/10">
+              <div className="text-2xl font-bold text-green-400">
+                {formatCurrency(reportData.totalProfit / 30)}
+              </div>
+              <div className="text-sm text-gray-400">Avg Daily Profit</div>
             </div>
-            <div className="text-sm text-gray-600">Avg Daily Profit</div>
           </div>
         </div>
-      </div>
 
-      {/* Export Options */}
-      <div className="bg-white p-6 rounded-lg shadow-sm">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">
-          Export Reports
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Sales Export */}
-          <div className="border border-gray-200 rounded-lg p-4">
-            <h4 className="font-semibold text-gray-800 mb-3">Sales Report</h4>
-            <p className="text-sm text-gray-600 mb-3">
-              Export all sales data with detailed information
-            </p>
-            <div className="flex gap-2">
-              <button
-                onClick={() => handleExportSales("csv")}
-                className="flex-1 bg-blue-600 text-white px-3 py-2 rounded text-sm font-medium hover:bg-blue-700 transition-colors"
-              >
-                CSV
-              </button>
-              <button
-                onClick={() => handleExportSales("json")}
-                className="flex-1 bg-green-600 text-white px-3 py-2 rounded text-sm font-medium hover:bg-green-700 transition-colors"
-              >
-                JSON
-              </button>
+        {/* Export Options */}
+        <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 shadow-2xl border border-white/10">
+          <h3 className="text-xl font-bold text-white mb-6">Export Reports</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Sales Export */}
+            <div className="bg-white/5 border border-white/10 rounded-xl p-4 hover:border-cyan-500/30 transition-all duration-300">
+              <h4 className="font-semibold text-white mb-3">Sales Report</h4>
+              <p className="text-sm text-gray-400 mb-4">
+                Export all sales data with detailed information
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => handleExportSales("csv")}
+                  className="flex-1 bg-gradient-to-r from-blue-500 to-cyan-600 text-white px-4 py-2 rounded-lg font-medium hover:shadow-lg hover:shadow-blue-500/25 hover:scale-105 transition-all duration-300"
+                >
+                  CSV
+                </button>
+                <button
+                  onClick={() => handleExportSales("json")}
+                  className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-2 rounded-lg font-medium hover:shadow-lg hover:shadow-green-500/25 hover:scale-105 transition-all duration-300"
+                >
+                  JSON
+                </button>
+              </div>
             </div>
-          </div>
 
-          {/* Inventory Export */}
-          <div className="border border-gray-200 rounded-lg p-4">
-            <h4 className="font-semibold text-gray-800 mb-3">
-              Inventory Report
-            </h4>
-            <p className="text-sm text-gray-600 mb-3">
-              Export product inventory with stock levels
-            </p>
-            <div className="flex gap-2">
-              <button
-                onClick={() => handleExportInventory("csv")}
-                className="flex-1 bg-blue-600 text-white px-3 py-2 rounded text-sm font-medium hover:bg-blue-700 transition-colors"
-              >
-                CSV
-              </button>
-              <button
-                onClick={() => handleExportInventory("json")}
-                className="flex-1 bg-green-600 text-white px-3 py-2 rounded text-sm font-medium hover:bg-green-700 transition-colors"
-              >
-                JSON
-              </button>
+            {/* Inventory Export */}
+            <div className="bg-white/5 border border-white/10 rounded-xl p-4 hover:border-purple-500/30 transition-all duration-300">
+              <h4 className="font-semibold text-white mb-3">
+                Inventory Report
+              </h4>
+              <p className="text-sm text-gray-400 mb-4">
+                Export product inventory with stock levels
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => handleExportInventory("csv")}
+                  className="flex-1 bg-gradient-to-r from-blue-500 to-cyan-600 text-white px-4 py-2 rounded-lg font-medium hover:shadow-lg hover:shadow-blue-500/25 hover:scale-105 transition-all duration-300"
+                >
+                  CSV
+                </button>
+                <button
+                  onClick={() => handleExportInventory("json")}
+                  className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-2 rounded-lg font-medium hover:shadow-lg hover:shadow-green-500/25 hover:scale-105 transition-all duration-300"
+                >
+                  JSON
+                </button>
+              </div>
             </div>
-          </div>
 
-          {/* Customers Export */}
-          <div className="border border-gray-200 rounded-lg p-4">
-            <h4 className="font-semibold text-gray-800 mb-3">
-              Customer Report
-            </h4>
-            <p className="text-sm text-gray-600 mb-3">
-              Export customer data and purchase history
-            </p>
-            <div className="flex gap-2">
-              <button
-                onClick={() => handleExportCustomers("csv")}
-                className="flex-1 bg-blue-600 text-white px-3 py-2 rounded text-sm font-medium hover:bg-blue-700 transition-colors"
-              >
-                CSV
-              </button>
-              <button
-                onClick={() => handleExportCustomers("json")}
-                className="flex-1 bg-green-600 text-white px-3 py-2 rounded text-sm font-medium hover:bg-green-700 transition-colors"
-              >
-                JSON
-              </button>
+            {/* Customers Export */}
+            <div className="bg-white/5 border border-white/10 rounded-xl p-4 hover:border-orange-500/30 transition-all duration-300">
+              <h4 className="font-semibold text-white mb-3">Customer Report</h4>
+              <p className="text-sm text-gray-400 mb-4">
+                Export customer data and purchase history
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => handleExportCustomers("csv")}
+                  className="flex-1 bg-gradient-to-r from-blue-500 to-cyan-600 text-white px-4 py-2 rounded-lg font-medium hover:shadow-lg hover:shadow-blue-500/25 hover:scale-105 transition-all duration-300"
+                >
+                  CSV
+                </button>
+                <button
+                  onClick={() => handleExportCustomers("json")}
+                  className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-2 rounded-lg font-medium hover:shadow-lg hover:shadow-green-500/25 hover:scale-105 transition-all duration-300"
+                >
+                  JSON
+                </button>
+              </div>
             </div>
           </div>
         </div>
