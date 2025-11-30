@@ -22,6 +22,7 @@ import SalesHistory from "./pages/SalesHistory";
 import BillingPage from "./pages/BillingPage";
 import Profile from "./pages/Profile";
 import ProductEdit from "./pages/ProductEdit";
+import RequireSubscription from "./utils/RequireSubscription";
 
 const App: React.FC = () => {
   return (
@@ -43,12 +44,14 @@ const App: React.FC = () => {
             <Route path="/inventory" element={<Inventory />} />
             <Route path="/customers" element={<Customers />} />
             <Route path="/reports" element={<Reports />} />
-            <Route path="/barcode-tools" element={<BarcodeTools />} />
+            <Route element={<RequireSubscription />}>
+              <Route path="/barcode-tools" element={<BarcodeTools />} />
+              <Route path="/products/edit/:id" element={<ProductEdit />} />
+            </Route>
             <Route path="/receive-stock" element={<InventoryReceiving />} />
             <Route path="/sales-history" element={<SalesHistory />} />
 
             <Route path="/profile" element={<Profile />} />
-            <Route path="/products/edit/:id" element={<ProductEdit />} />
           </Route>
         </Route>
       </Routes>
