@@ -7,9 +7,13 @@ interface PriceData {
   tier: string;
   monthly: number;
   yearly: number;
-  serviceOne: string;
-  serviceTwo: string;
-  serviceThree: string;
+  features: string[]; // replaces serviceOne, serviceTwo, serviceThree
+  maxUsers: number;
+  maxProducts: number;
+  reports: boolean;
+  analytics: boolean;
+  inventoryAlerts: boolean;
+  advancedIntegrations: boolean;
 }
 
 declare global {
@@ -48,25 +52,59 @@ const priceData: PriceData[] = [
     tier: "Basic",
     monthly: 19,
     yearly: 199,
-    serviceOne: "500 GB Storage",
-    serviceTwo: "500 GB Storage",
-    serviceThree: "500 GB Storage",
+    features: [
+      "Single Store Management",
+      "Basic Inventory Tracking",
+      "Daily Sales Recording",
+      "Low Stock Alerts",
+    ],
+    maxUsers: 1,
+    maxProducts: 500,
+    reports: true,
+    analytics: false,
+    inventoryAlerts: true,
+    advancedIntegrations: false,
   },
   {
     tier: "Professional",
     monthly: 270,
     yearly: 2099,
-    serviceOne: "1 TB Storage",
-    serviceTwo: "5 Users Allowed",
-    serviceThree: "Send up to 10GB",
+    features: [
+      "Multi-Store Support",
+      "Advanced Inventory Tracking",
+      "Staff Accounts (Up to 5)",
+      "Purchase Order Management",
+      "Expense Tracking",
+      "Profit & Loss Reports",
+      "Email Alerts",
+    ],
+    maxUsers: 5,
+    maxProducts: 5000,
+    reports: true,
+    analytics: true,
+    inventoryAlerts: true,
+    advancedIntegrations: false,
   },
   {
     tier: "Master",
-    monthly: 39,
-    yearly: 399,
-    serviceOne: "2 TB Storage",
-    serviceTwo: "10 Users Allowed",
-    serviceThree: "Send up to 20GB",
+    monthly: 500,
+    yearly: 3500,
+    features: [
+      "Unlimited Stores",
+      "Real-Time Sync Across Devices",
+      "Unlimited Staff Accounts",
+      "Barcode / QR Code Scanning",
+      "Supplier Management",
+      "Advanced Financial Reports",
+      "Business Intelligence Dashboard",
+      "API & 3rd-Party Integrations",
+    ],
+    maxUsers: 9999,
+    maxProducts: 999999,
+    reports: true,
+    analytics: true,
+    inventoryAlerts: true,
+    advancedIntegrations: true,
   },
 ];
 
@@ -248,42 +286,22 @@ const BillingPage = () => {
 
                 {/* Features List */}
                 <div className="space-y-4 mb-8">
-                  <div className="flex items-center space-x-3">
-                    <div
-                      className={`w-5 h-5 rounded-full flex items-center justify-center ${
-                        isMiddle ? "bg-cyan-500" : "bg-gray-600"
-                      }`}
-                    >
-                      <span className="text-white text-xs">✓</span>
+                  {curr.features.map((feature, idx) => (
+                    <div key={idx} className="flex items-center space-x-3">
+                      <div
+                        className={`w-5 h-5 rounded-full flex items-center justify-center ${
+                          isMiddle ? "bg-cyan-500" : "bg-gray-600"
+                        }`}
+                      >
+                        <span className="text-white text-xs">✓</span>
+                      </div>
+                      <span
+                        className={isMiddle ? "text-white" : "text-gray-300"}
+                      >
+                        {feature}
+                      </span>
                     </div>
-                    <span className={isMiddle ? "text-white" : "text-gray-300"}>
-                      {curr.serviceOne}
-                    </span>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <div
-                      className={`w-5 h-5 rounded-full flex items-center justify-center ${
-                        isMiddle ? "bg-cyan-500" : "bg-gray-600"
-                      }`}
-                    >
-                      <span className="text-white text-xs">✓</span>
-                    </div>
-                    <span className={isMiddle ? "text-white" : "text-gray-300"}>
-                      {curr.serviceTwo}
-                    </span>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <div
-                      className={`w-5 h-5 rounded-full flex items-center justify-center ${
-                        isMiddle ? "bg-cyan-500" : "bg-gray-600"
-                      }`}
-                    >
-                      <span className="text-white text-xs">✓</span>
-                    </div>
-                    <span className={isMiddle ? "text-white" : "text-gray-300"}>
-                      {curr.serviceThree}
-                    </span>
-                  </div>
+                  ))}
                 </div>
 
                 {/* Subscribe Button */}
