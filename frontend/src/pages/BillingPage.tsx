@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "../utils/AuthContext";
 import axios from "../axios/axiosInstance";
+import { useNavigate } from "react-router-dom";
 
 interface PriceData {
   tier: string;
@@ -69,12 +70,13 @@ const priceData: PriceData[] = [
   },
 ];
 
-const Pricing = () => {
+const BillingPage = () => {
   const INR_TO_USD = 90; // 1 USD = 90 INR
 
   const [isMonthly, setIsMonthly] = useState(false);
   const { user, refreshUser } = useAuth();
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   // Subscribe to a plan
   const handleSubscribe = async (tier: string) => {
@@ -285,10 +287,13 @@ const Pricing = () => {
                 </div>
 
                 {/* Subscribe Button */}
-                <button
-                  disabled={!isMiddle || loading}
-                  onClick={() => handleSubscribe(curr.tier)}
-                  className={`
+                {
+                  <button
+                    disabled={!isMiddle || loading}
+                    onClick={() =>
+                      user ? handleSubscribe(curr.tier) : navigate("/login")
+                    }
+                    className={`
                     w-full py-4 rounded-xl font-bold transition-all duration-300
                     ${
                       isMiddle
@@ -297,13 +302,14 @@ const Pricing = () => {
                     }
                     ${loading ? "opacity-50 cursor-not-allowed" : ""}
                   `}
-                >
-                  {loading && isMiddle
-                    ? "🔄 Processing..."
-                    : isMiddle
-                    ? "🚀 Get Started"
-                    : "Coming Soon"}
-                </button>
+                  >
+                    {loading && isMiddle
+                      ? "🔄 Processing..."
+                      : isMiddle
+                      ? "🚀 Get Started"
+                      : "Coming Soon"}
+                  </button>
+                }
 
                 {/* Cancel Subscription Button */}
                 {isMiddle && user?.subscriptionStatus === "active" && (
@@ -340,4 +346,4 @@ const Pricing = () => {
   );
 };
 
-export default Pricing;
+export default BillingPage;

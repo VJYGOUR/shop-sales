@@ -37,12 +37,12 @@ const Home: React.FC = () => {
                 >
                   Testimonials
                 </a>
-                <a
-                  href="#pricing"
+                <Link
+                  to="/billing"
                   className="text-gray-300 hover:text-cyan-400 font-medium transition-all duration-300 hover:scale-105"
                 >
                   Pricing
-                </a>
+                </Link>
               </div>
             </div>
             <div className="flex items-center space-x-4">

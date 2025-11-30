@@ -32,6 +32,7 @@ const App: React.FC = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/verify-email" element={<VerifyEmail />} />{" "}
+        <Route path="/billing" element={<BillingPage />} />
         {/* Add this route */}
         {/* Protected routes with sidebar layout */}
         <Route element={<Layout />}>
@@ -45,7 +46,7 @@ const App: React.FC = () => {
             <Route path="/barcode-tools" element={<BarcodeTools />} />
             <Route path="/receive-stock" element={<InventoryReceiving />} />
             <Route path="/sales-history" element={<SalesHistory />} />
-            <Route path="/billing" element={<BillingPage />} />
+
             <Route path="/profile" element={<Profile />} />
             <Route path="/products/edit/:id" element={<ProductEdit />} />
           </Route>
