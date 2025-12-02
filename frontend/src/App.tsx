@@ -23,6 +23,7 @@ import BillingPage from "./pages/BillingPage";
 import Profile from "./pages/Profile";
 import ProductEdit from "./pages/ProductEdit";
 import RequireSubscription from "./utils/RequireSubscription";
+import EmailCapturePage from "./pages/EmailCapturePage";
 
 const App: React.FC = () => {
   return (
@@ -34,6 +35,7 @@ const App: React.FC = () => {
         <Route path="/signup" element={<Signup />} />
         <Route path="/verify-email" element={<VerifyEmail />} />{" "}
         <Route path="/billing" element={<BillingPage />} />
+        <Route path="/resend-verification" element={<EmailCapturePage />} />
         {/* Add this route */}
         {/* Protected routes with sidebar layout */}
         <Route element={<Layout />}>

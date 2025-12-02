@@ -274,6 +274,14 @@ const Login = () => {
                 Forgot password?
               </Link>
             </div>
+            <div className="text-right mt-2">
+              <Link
+                to="/resend-verification"
+                className="text-sm text-cyan-500 hover:text-cyan-300 transition-colors duration-200 font-medium"
+              >
+                Resend verification email
+              </Link>
+            </div>
 
             {/* Submit Button */}
             <button
