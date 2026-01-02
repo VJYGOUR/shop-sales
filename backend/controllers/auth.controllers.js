@@ -20,6 +20,7 @@ export const signup = async (req, res) => {
     const userExists = await User.findOne({ email });
     console.log("user exist", userExists);
     if (userExists) {
+      console.log(userExists);
       return res.status(400).json({ message: "User already exists" });
     }
     // Validate required fields
