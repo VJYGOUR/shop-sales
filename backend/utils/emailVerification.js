@@ -1,9 +1,9 @@
 // src/services/emailService.js
 import validator from "validator";
 import axios from "axios";
-import dotenv from "dotenv";
+import { configDotenv } from "dotenv";
 
-dotenv.config();
+configDotenv();
 
 // ------------------------------------
 // 🔹 Brevo API client
