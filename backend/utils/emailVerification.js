@@ -1,33 +1,24 @@
+// src/services/emailService.js
 import validator from "validator";
-import nodemailer from "nodemailer";
-import { configDotenv } from "dotenv";
-configDotenv();
+import axios from "axios";
+import dotenv from "dotenv";
 
-// ----------------------
-// 1️⃣ Setup Brevo SMTP Transporter
-// ----------------------
-const transporter = nodemailer.createTransport({
-  host: "smtp-relay.brevo.com",
-  port: 587,
-  secure: false,
-  auth: {
-    user: process.env.BREVO_SMTP_USER, // e.g. 9ca50a001@smtp-brevo.com
-    pass: process.env.BREVO_SMTP_PASS, // your SMTP password
+dotenv.config();
+
+// ------------------------------------
+// 🔹 Brevo API client
+// ------------------------------------
+const brevoClient = axios.create({
+  baseURL: "https://api.brevo.com/v3",
+  headers: {
+    "api-key": process.env.BREVO_API_KEY,
+    "content-type": "application/json",
   },
 });
 
-// Test the SMTP connection on server start
-transporter.verify((error, success) => {
-  if (error) {
-    console.error("❌ SMTP Connection Failed:", error);
-  } else {
-    console.log("✅ SMTP Server Ready to Send Emails");
-  }
-});
-
-// ----------------------
-// 2️⃣ Validate Email (your original logic) — UNTOUCHED
-// ----------------------
+// ------------------------------------
+// 1️⃣ Validate Email
+// ------------------------------------
 export const validateEmail = async (email) => {
   try {
     if (!validator.isEmail(email)) {
@@ -66,105 +57,102 @@ export const validateEmail = async (email) => {
     }
 
     return { isValid: true };
-  } catch (error) {
+  } catch {
     return { isValid: false, reason: "Email verification failed" };
   }
 };
 
-// ----------------------------------------------------
-// 3️⃣ Send Verification Email (same logic, just SMTP)
-// ----------------------------------------------------
+// ------------------------------------
+// 🔹 Internal helper to send email
+// ------------------------------------
+const sendEmail = async ({ to, subject, html }) => {
+  try {
+    await brevoClient.post("/smtp/email", {
+      sender: {
+        email: process.env.EMAIL_FROM,
+        name: "Stoq",
+      },
+      to: [{ email: to }],
+      subject,
+      htmlContent: html,
+    });
+
+    return true;
+  } catch (error) {
+    console.error(
+      "❌ Brevo email failed:",
+      error?.response?.data || error.message
+    );
+    return false;
+  }
+};
+
+// ------------------------------------
+// 2️⃣ Send Verification Email
+// ------------------------------------
 export const sendVerificationEmail = async (email, verificationToken) => {
-  try {
-    const frontendUrl = process.env.FRONTEND_URL?.replace(/\/$/, "");
-    const verificationUrl = `${frontendUrl}/verify-email?token=${verificationToken}`;
+  const frontendUrl = process.env.FRONTEND_URL?.replace(/\/$/, "");
+  const verificationUrl = `${frontendUrl}/verify-email?token=${verificationToken}`;
 
-    const msg = {
-      from: process.env.SENDGRID_FROM_EMAIL, // Your FROM email stays same
-      to: email,
-      subject: "Verify Your Stoq Account",
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2>Please verify Your Email to start using Stoq</h2>
-          <p>Please click the button below to verify your email address:</p>
-          <a href="${verificationUrl}" 
-             style="background-color: #007bff; color: white; padding: 12px 24px; 
-                    text-decoration: none; border-radius: 4px; display: inline-block;">
-            Verify Email
-          </a>
-          <p>Or copy and paste this link in your browser:</p>
-          <p>${verificationUrl}</p>
-          <p>This link will expire in 24 hours.</p>
-        </div>
-      `,
-    };
-
-    await transporter.sendMail(msg);
-    console.log(`✅ Verification email sent to ${email}`);
-    return true;
-  } catch (error) {
-    console.error("❌ Error sending verification email:", error);
-    return false;
-  }
+  return sendEmail({
+    to: email,
+    subject: "Verify Your Stoq Account",
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px;">
+        <h2>Verify your email</h2>
+        <p>Click the button below to verify your email address:</p>
+        <a href="${verificationUrl}"
+           style="background:#2563eb;color:#fff;padding:12px 20px;
+                  text-decoration:none;border-radius:6px;">
+          Verify Email
+        </a>
+        <p>If the button doesn’t work, copy this link:</p>
+        <p>${verificationUrl}</p>
+        <p>This link expires in 24 hours.</p>
+      </div>
+    `,
+  });
 };
 
-// ----------------------------------------------------
-// 4️⃣ Send Admin Notification Email (logic unchanged)
-// ----------------------------------------------------
+// ------------------------------------
+// 3️⃣ Send Admin Notification
+// ------------------------------------
 export const sendNewUserNotification = async (user) => {
-  try {
-    const msg = {
-      to: process.env.ADMIN_EMAIL || process.env.SENDGRID_FROM_EMAIL,
-      from: process.env.SENDGRID_FROM_EMAIL,
-      subject: "🎉 New User Registered on Stoq!",
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #3B82F6;">New User Alert!</h2>
-          <div style="background: #f8fafc; padding: 20px; border-radius: 8px;">
-            <p><strong>Name:</strong> ${user.name}</p>
-            <p><strong>Email:</strong> ${user.email}</p>
-            <p><strong>Registered At:</strong> ${new Date().toLocaleString()}</p>
-            <p><strong>User ID:</strong> ${user._id}</p>
-            <p><strong>Email Verified:</strong> ${
-              user.isEmailVerified ? "Yes" : "No"
-            }</p>
-          </div>
-        </div>
-      `,
-    };
-
-    await transporter.sendMail(msg);
-    console.log(`📧 Admin notification sent for new user: ${user.email}`);
-    return true;
-  } catch (error) {
-    console.error("❌ Error sending admin notification:", error);
-    return false;
-  }
+  return sendEmail({
+    to: process.env.ADMIN_EMAIL || process.env.EMAIL_FROM,
+    subject: "🎉 New User Registered on Stoq",
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px;">
+        <h2>New User Registered</h2>
+        <p><strong>Name:</strong> ${user.name}</p>
+        <p><strong>Email:</strong> ${user.email}</p>
+        <p><strong>User ID:</strong> ${user._id}</p>
+        <p><strong>Email Verified:</strong> ${
+          user.isEmailVerified ? "Yes" : "No"
+        }</p>
+        <p><strong>Registered At:</strong> ${new Date().toLocaleString()}</p>
+      </div>
+    `,
+  });
 };
 
-// ----------------------------------------------------
-// 5️⃣ Send Welcome Email (logic unchanged)
-// ----------------------------------------------------
+// ------------------------------------
+// 4️⃣ Send Welcome Email
+// ------------------------------------
 export const sendWelcomeEmail = async (user) => {
-  try {
-    const msg = {
-      to: user.email,
-      from: process.env.SENDGRID_FROM_EMAIL,
-      subject: "Welcome to Stoq! 🎉",
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #3B82F6;">Welcome to Stoq, ${user.name}! 🎉</h2>
-          <p>We're excited to have you on board.</p>
-          <p>Ready to get started? <a href="${process.env.FRONTEND_URL}">Login to your account</a></p>
-        </div>
-      `,
-    };
-
-    await transporter.sendMail(msg);
-    console.log(`✅ Welcome email sent to ${user.email}`);
-    return true;
-  } catch (error) {
-    console.error("❌ Error sending welcome email:", error);
-    return false;
-  }
+  return sendEmail({
+    to: user.email,
+    subject: "Welcome to Stoq 🎉",
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px;">
+        <h2>Welcome, ${user.name}! 🎉</h2>
+        <p>Your account is ready.</p>
+        <a href="${process.env.FRONTEND_URL}"
+           style="background:#16a34a;color:#fff;padding:12px 20px;
+                  text-decoration:none;border-radius:6px;">
+          Go to Dashboard
+        </a>
+      </div>
+    `,
+  });
 };
