@@ -28,10 +28,10 @@ const subscriptionLogSchema = new mongoose.Schema(
       default: {},
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 // Index for fast queries
-subscriptionLogSchema.index({ user: 1, subscriptionId: 1 });
+// subscriptionLogSchema.index({ user: 1, subscriptionId: 1 });
 
 export default mongoose.model("SubscriptionLog", subscriptionLogSchema);

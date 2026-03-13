@@ -44,17 +44,17 @@ const saleSchema = new mongoose.Schema(
     // 🔑 ADD THIS USER FIELD - THIS MAKES SALES USER-SPECIFIC
     user: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: true // Every sale MUST belong to a user
-    }
+      ref: "User",
+      required: true, // Every sale MUST belong to a user
+    },
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 // Update indexes to include user
-saleSchema.index({ user: 1, date: -1 }); // User's sales by date
-saleSchema.index({ user: 1, productId: 1 }); // User's sales by product
+// saleSchema.index({ user: 1, date: -1 }); // User's sales by date
+// saleSchema.index({ user: 1, productId: 1 }); // User's sales by product
 
 export default mongoose.model("Sale", saleSchema);

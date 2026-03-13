@@ -60,7 +60,7 @@ const productSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 // Auto-generate SKU before saving
@@ -121,6 +121,5 @@ productSchema.pre("save", async function (next) {
 });
 
 // Keep your existing indexes
-productSchema.index({ user: 1, name: "text", category: "text" });
 
 export default mongoose.model("Product", productSchema);

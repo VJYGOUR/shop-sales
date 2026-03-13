@@ -86,7 +86,7 @@ const userSchema = new mongoose.Schema(
     emailVerificationToken: String,
     emailVerificationExpires: Date,
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 // PREHOOK FOR PASSWORD HASHING BEFORE STORING IN DB
@@ -121,7 +121,7 @@ userSchema.methods.extendSubscription = function (days) {
 };
 
 // ADD THESE INDEXES AT THE BOTTOM BEFORE EXPORT:
-userSchema.index({ subscriptionId: 1 });
-userSchema.index({ subscriptionStatus: 1 });
+// userSchema.index({ subscriptionId: 1 });
+// userSchema.index({ subscriptionStatus: 1 });
 const User = mongoose.models.User || mongoose.model("User", userSchema);
 export default User;
